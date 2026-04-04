@@ -27,7 +27,7 @@ def main():
     
     # Limit to 5 samples for brief execution if needed. 
     # For full run, comment out the limit.
-    # df = df.head(5)
+    df = df.head(5)
 
     generator = AudioGenerator()
     evaluator = AudioEvaluator()
@@ -68,17 +68,21 @@ def main():
     output_csv = "outputs/results_table.csv"
     results_df.to_csv(output_csv, index=False)
     print(f"\nSaved raw generation results to {output_csv}")
+
+    transfer_log_path = "outputs/domain_transfer_results.csv"
+    transfer_df = evaluator.save_domain_transfer_log(results, transfer_log_path)
+    print(f"Saved domain transfer log to {transfer_log_path}")
     
     # 4. Global Metrics: FAD, CRI, CDTS
-    fad_score = evaluator.evaluate_fad(eval_audio_dir="outputs/audio/", reference_audio_dir="data/reference_audio/")
     agg_metrics = evaluator.compute_aggregate_metrics(results)
-    
+
     print("\n--- Final Project Evaluation ---")
-    print(f"1. FAD (Fréchet Audio Distance): {fad_score:.4f} (requires data/reference_audio/ samples)")
-    print(f"2. Average POAS (Prompt Similarity): {results_df['poas_score'].mean():.4f}")
-    print(f"3. CRI (Cross-domain Robustness): {agg_metrics['CRI_Robustness_Variance']}")
-    print(f"4. CDTS (Cross-domain Transfer): {agg_metrics['CDTS_Transfer_Mean']}")
-    
+    print(f"1. Average POAS (CLAP): {results_df['poas_score'].mean():.4f}")
+    print(f"2. CRI (Cross-domain Robustness): {agg_metrics['CRI_Robustness_Variance']}")
+    print(f"3. CDTS (Cross-domain Transfer): {agg_metrics['CDTS_Transfer_Mean']}")
+    print("4. Domain Transfer by class:")
+    print(transfer_df.to_string(index=False))
+
     print("\nPipeline execution complete! Check outputs/ directory for generated logs and audio.")
 
 if __name__ == "__main__":

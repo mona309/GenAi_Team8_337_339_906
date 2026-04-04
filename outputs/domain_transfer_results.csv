@@ -1,0 +1,3 @@
+domain,samples,mean_poas,std_poas
+music,4,0.0682,0.1029
+speech,1,-0.0797,0.0
