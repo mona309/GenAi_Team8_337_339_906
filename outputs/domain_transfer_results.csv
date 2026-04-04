@@ -1,3 +1,5 @@
-domain,samples,mean_poas,std_poas
-music,4,0.0682,0.1029
-speech,1,-0.0797,0.0
+domain,samples,mean_poas,std_poas,cri_local,cdts_local
+music,2,0.0355,0.1361,0.1361,0.0355
+sfx,2,-0.0605,0.0783,0.0783,-0.0605
+speech,1,-0.0797,0.0,0.0,-0.0797
+GLOBAL,5,-0.026,0.1114,0.1114,-0.026

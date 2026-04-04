@@ -89,14 +89,30 @@ class AudioEvaluator:
         for item in results_data:
             grouped[item["domain"]].append(item["poas_score"])
 
+        overall_scores = []
+
         for domain, scores in grouped.items():
+            overall_scores.extend(scores)
             rows.append({
                 "domain": domain,
                 "samples": len(scores),
                 "mean_poas": round(float(np.mean(scores)), 4),
                 "std_poas": round(float(np.std(scores)), 4),
+                "cri_local": round(float(np.std(scores)), 4),
+                "cdts_local": round(float(np.mean(scores)), 4),
             })
 
         df = pd.DataFrame(rows).sort_values("mean_poas", ascending=False)
+
+        # Global metrics row
+        df.loc[len(df)] = {
+            "domain": "GLOBAL",
+            "samples": len(overall_scores),
+            "mean_poas": round(float(np.mean(overall_scores)), 4),
+            "std_poas": round(float(np.std(overall_scores)), 4),
+            "cri_local": round(float(np.std(overall_scores)), 4),
+            "cdts_local": round(float(np.mean(overall_scores)), 4),
+        }
+
         df.to_csv(output_path, index=False)
         return df

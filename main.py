@@ -27,7 +27,12 @@ def main():
     
     # Limit to 5 samples for brief execution if needed. 
     # For full run, comment out the limit.
-    df = df.head(5)
+    #df = df.head(5)
+    df = pd.concat([
+        df[df["domain"] == "music"].head(2),
+        df[df["domain"] == "speech"].head(1),
+        df[df["domain"] == "sfx"].head(2),
+    ], ignore_index=True)
 
     generator = AudioGenerator()
     evaluator = AudioEvaluator()
