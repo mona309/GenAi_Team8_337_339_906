@@ -1,19 +1,31 @@
-prompt,domain
-sfx,"Heavy thunder strike followed by rain ambience"
-sfx,"Glass shattering on a hard concrete floor"
-sfx,"Fast car passing with doppler effect"
-"A gentle acoustic guitar melody with a soft pad synthesizer.",music
-"Hard-hitting techno 4/4 beat with distorted synth bass.",music
-"A cheerful pop song with a fast tempo and bright piano.",music
-"A solitary piano playing a slow and somber tune.",music
-"A woman speaking clearly and calmly in a studio setting.",speech
-"Two people having a lively conversation over some background noise.",speech
-"An angry man yelling quite loudly from a distance.",speech
-"A male news anchor giving a formal evening broadcast.",speech
-"Waves crashing against huge rocks on a stormy beach.",sfx
-"A crowded restaurant with clinking glasses and chatter.",sfx
-"A loud thunderclap followed by heavy rain hitting a roof.",sfx
-"A car starting and driving away quickly in an urban street.",sfx
-"Birdsong in an empty, echoing woodland.",sfx
-"A synth wave arpeggio with 80s drums.",music
-"A baby babbling happily while playing.",speech
+domain,prompt
+music,"A cinematic orchestral soundtrack with powerful strings and brass, professional studio recording, balanced frequencies, high fidelity audio"
+music,"A lo-fi chill hip hop beat with vinyl crackle, soft drums, relaxing mood, well-mixed and mastered audio"
+music,"A jazz piano performance in a cozy lounge, warm tones, clear acoustics, high quality recording"
+music,"An energetic EDM track with deep bass drops and bright synths, club-quality mixing, crisp sound design"
+music,"A classical violin solo in a concert hall, emotional expression, rich harmonics, studio quality audio"
+music,"A soft acoustic guitar melody, natural resonance, clean recording, intimate environment"
+music,"A rock song with electric guitar riffs and drums, high energy, professional studio mix"
+music,"A cinematic ambient soundtrack with deep textures, immersive sound design, high clarity"
+music,"A techno beat with heavy bass and rhythmic percussion, electronic precision, high fidelity"
+music,"A flute melody in a peaceful forest, natural ambience, realistic environmental recording"
+
+
+speech,"A high-quality studio recording of a human female voice speaking clearly and naturally, realistic speech, precise articulation, no background noise, professional broadcast audio"
+speech,"A human male voice delivering a speech with clear pronunciation and emotion, studio recording, realistic tone"
+speech,"A professional news anchor speaking clearly, broadcast quality audio, realistic human speech"
+speech,"A child speaking and laughing naturally, clear voice, realistic environment"
+speech,"A teacher explaining a topic clearly, human voice, studio recording, clean audio"
+speech,"A person whispering softly in a quiet room, highly detailed recording, clear audio"
+speech,"A podcast conversation with clear voices and balanced sound levels, professional recording"
+speech,"A radio announcer with deep voice, high-quality broadcast recording"
+speech,"A person speaking on a phone call, slightly compressed audio, realistic effect"
+speech,"A storyteller narrating a story with expressive voice, immersive audio experience"
+
+sfx,"A highly realistic recording of heavy rain falling on a metal roof, detailed water droplets, consistent rhythm, immersive environmental sound, spatial audio"
+sfx,"Powerful ocean waves crashing against large rocks, deep bass rumble, wide stereo field, realistic coastal environment"
+sfx,"A car engine starting and accelerating smoothly, mechanical detail, clean recording, realistic automotive sound"
+sfx,"Fire crackling in a quiet forest, detailed high-frequency textures, natural ambience, immersive sound design"
+sfx,"Footsteps walking on dry leaves, crisp and detailed sound, close-up recording, natural outdoor environment"
+sfx,"Birds chirping in a peaceful morning forest, natural stereo recording"
+sfx,"A crowded restaurant with chatter and clinking glasses, realistic ambient recording"
