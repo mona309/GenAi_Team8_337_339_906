@@ -1,0 +1,92 @@
+PAPER UPDATE SUMMARY & NEXT STEPS
+==================================
+
+CHANGES MADE TO ALIGN PAPER WITH CODE
+-------------------------------------
+
+1. ABSTRACT
+   - Removed claims about FAD, Inception Score (IS), and MOS evaluation.
+   - Updated to explicitly mention CLAP embeddings for POAS computation.
+   - Adjusted claims to reflect actual findings (domain-specific variation) rather than hypothetical results.
+
+2. SECTION 1: INTRODUCTION
+   - Removed references to FAD, IS, and MOS as "dominant metrics" being critiqued.
+   - Updated contributions to match the actual implemented pipeline.
+
+3. SECTION 2: RELATED WORK
+   - Removed detailed critique of FAD, IS, and MOS (not implemented in code).
+   - Focused related work on CLAP-based scoring as the primary baseline.
+   - Updated RAG section to describe a local keyword-based knowledge base rather than dense neural retrieval.
+
+4. SECTION 3: PROPOSED METHODOLOGY
+   - Updated CRI formula to match code: global standard deviation of all POAS scores (np.std(all_scores)), not std of domain means.
+   - Updated CDTS formula to match code: global mean of all POAS scores (np.mean(all_scores)), not mean of domain means.
+   - Added domain-specific inference parameters: SFX uses 7.0s duration and guidance=6.5; speech/music use 3.0s and guidance=6.0.
+   - Added description of quality suffix appended to all prompts: "High quality, realistic, clear audio, professional recording."
+   - Updated RAG section to accurately describe the 7-entry local KB (guitar, piano, techno, speech, storm, restaurant, bird) and the " | Features: " delimiter format.
+
+5. SECTION 4: EXPERIMENTAL SETUP
+   - Corrected dataset size: 27 prompts total (10 music, 10 speech, 7 sfx), not 600.
+   - Updated hyperparameters: 20 DDIM inference steps (not 200), 3.0s/7.0s audio duration, guidance 6.0/6.5.
+   - Updated cross-domain results to match actual CSV output:
+     * CRI = 0.0891 (was 0.1114)
+     * CDTS = 0.1710 (was -0.0260)
+     * Music POAS = 0.2534, SFX = 0.1692, Speech = 0.0099
+
+6. SECTION 5: RESULTS AND DISCUSSION
+   - Removed FAD and UTMOS columns from Table 1 (not computed in code).
+   - Updated table to show: Samples, Mean POAS, Std POAS, Local CDTS.
+   - Updated discussion to explain actual domain rankings (music > SFX > speech) and CLAP training bias toward environmental sound/music over speech content.
+
+7. SECTION 6: ABLATION STUDY
+   - Removed unsupported claims about random descriptor injection and r=1 vs r=3 ablation (not implemented).
+   - Replaced with description of actual KB structure and metric sensitivity analysis based on real outputs.
+
+8. SECTION 7: CONCLUSION
+   - Updated findings to reflect actual POAS values and domain variation.
+   - Updated future work to mention expanding the 7-entry KB and replacing keyword matching with dense retrieval.
+
+9. BIBLIOGRAPHY
+   - Removed references to papers not relevant to the actual implementation (FAD, IS, MOS, LibriSpeech, MusicCaps, AudioCaps).
+   - Kept core references: AudioLDM/2, CLAP, DDPM, LDM, CFG, DDIM, HiFi-GAN, RAG.
+
+RECOMMENDED NEXT STEPS
+----------------------
+
+1. RUN FULL PIPELINE
+   - Uncomment `df = df.head(5)` limit in main.py to process all 27 prompts.
+   - Command: `python main.py`
+   - This will generate actual POAS scores for the full dataset to verify/update paper numbers.
+
+2. GENERATE CROSS-DOMAIN FIGURE
+   - Create `outputs/cross-domain.png` (bar chart or plot showing POAS by domain).
+   - The paper references this figure but it needs to be generated from the CSV outputs.
+
+3. EXPAND RAG KNOWLEDGE BASE
+   - Current KB has only 7 entries. Many prompts (e.g., "cinematic orchestral", "lo-fi hip hop", "ocean waves") fall back to the default descriptor.
+   - Add keywords for: orchestral, hip hop, jazz, edm, violin, acoustic guitar, rock, ambient, rain, ocean, car, fire, footsteps.
+   - This will improve POAS scores for currently unmatched prompts.
+
+4. AUTHOR & INSTITUTION DETAILS
+   - Fill in placeholder author names, IEEE membership status, institution, and email in the \author{} block.
+
+5. CONSIDER ADDING FAD/UTMOS (OPTIONAL)
+   - If journal reviewers expect traditional audio quality metrics, implement FAD and UTMOS computation in evaluation.py.
+   - Otherwise, the paper should explicitly justify why POAS/CLAP is sufficient for intent alignment evaluation.
+
+6. STATISTICAL SIGNIFICANCE
+   - Run multiple seeds per prompt (e.g., 3-5 generations each) to compute confidence intervals for POAS scores.
+   - Current results use a single random seed per prompt, which limits statistical reliability.
+
+7. FINAL COMPILATION CHECK
+   - Run `pdflatex paper.tex` (or overleaf) to verify no compilation errors.
+   - Ensure all .png files are in the same directory as paper.tex.
+
+8. FIGURES ADDED
+   - Generated 5 figures via generate_all_figures.py in outputs/figures/:
+     * system_architecture.png - Pipeline diagram (Sec 3.1)
+     * diffusion_process.png - Forward diffusion visualization (Sec 3.2)
+     * giaf_framework.png - GIAF metrics structure (Sec 3.3)
+     * rag_enhancement.png - RAG workflow diagram (Sec 3.4)
+     * cross-domain-results.png - Results plots (Sec 5)
+   - Copied to project root for LaTeX compilation

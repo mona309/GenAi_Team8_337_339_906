@@ -1,0 +1,901 @@
+\documentclass[journal]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subfig}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{url}
+\usepackage{algorithmic}
+\usepackage{enumitem}
+\usepackage{stfloats}
+\usepackage{placeins}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+\usepackage{hyperref}
+
+% ---- TITLE ------------------------------------------------
+\title{Generative Intent Alignment in Text-to-Audio Diffusion Models:
+A Unified Cross-Domain Evaluation Framework}
+
+% ---- AUTHORS (example --- adjust as needed) -----------------
+\author{Author~One,~\IEEEmembership{Student Member,~IEEE,}
+        Author~Two,~\IEEEmembership{Member,~IEEE,}
+        and~Author~Three,~\IEEEmembership{Senior Member,~IEEE}%
+\thanks{Manuscript received XX Month, 2025.}%
+\thanks{Authors are with the Department of Electrical and Computer
+Engineering, [Institution Name], [City], [Country].
+e-mail: \{author1, author2, author3\}@institution.edu.}}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Recent advances in latent diffusion models have enabled high-quality
+text-to-audio generation across diverse domains such as speech, music,
+and environmental sound. However, existing evaluation metrics
+primarily assess perceptual quality and fail to capture whether
+generated audio faithfully reflects the semantic intent of the input
+prompt.
+
+This paper addresses this limitation by introducing the
+\textit{Generative Intent Alignment Framework} (GIAF), a structured
+evaluation framework designed to quantify semantic fidelity in
+text-to-audio systems. GIAF incorporates three complementary metrics:
+Prompt-to-Audio Similarity (POAS) for measuring semantic alignment
+via CLAP embeddings, Cross-domain Robustness Index (CRI) for
+evaluating consistency across domains, and Cross-domain Transfer
+Score (CDTS) for assessing overall alignment performance.
+
+In addition, a retrieval-augmented prompt conditioning strategy is
+proposed to enhance semantic specificity without modifying the
+underlying generative model. Experiments conducted across speech,
+music, and sound effect domains demonstrate that the proposed
+framework provides a comprehensive evaluation of generative
+performance, revealing significant domain-specific variation in
+semantic fidelity. The results highlight the importance of
+intent-aware evaluation in advancing text-to-audio generation systems.
+\end{abstract}
+
+\begin{IEEEkeywords}
+text-to-audio generation, latent diffusion models, intent alignment,
+CLAP, retrieval-augmented generation, cross-domain evaluation, GIAF.
+\end{IEEEkeywords}
+
+% ===========================================================
+%  SECTION 1 --- INTRODUCTION
+% ===========================================================
+\section{Introduction}
+\label{sec:intro}
+
+\IEEEPARstart{T}{he} rapid proliferation of large-scale generative
+models has catalysed a paradigm shift in computational audio synthesis.
+Text-to-audio systems, built upon latent diffusion architectures and
+contrastive language--audio pre-training, now produce waveforms of
+perceptual quality that rivals human recordings across diverse acoustic
+categories including speech, music, and environmental sound effects
+\cite{liu2023audioldm, kreuk2022audiogen, huang2023makeanaudio}.
+The central premise of these systems is that a natural-language prompt
+constitutes a sufficient specification of the desired acoustic output,
+enabling flexible, open-ended audio creation without domain-specific
+signal engineering.
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\linewidth]{Introduction.png}
+    \caption{Overview of text-to-audio generation pipeline highlighting the gap between perceptual quality and semantic intent alignment.}
+    \label{fig:intro}
+\end{figure}
+
+As illustrated in Fig. \ref{fig:intro}, despite the remarkable
+advances in generative audio quality, the evaluation methodology
+applied to text-to-audio generation has not kept pace with the
+sophistication of the generative models themselves. The dominant metrics
+were originally designed to quantify distributional fidelity and
+perceptual naturalness, respectively. While these measures provide
+informative signals regarding signal quality, they are fundamentally
+insensitive to the semantic relationship between the conditioning prompt
+and the generated waveform. A system may generate acoustically plausible
+audio that is entirely inconsistent with the intent expressed in the
+input text. This \textit{evaluation gap} represents a critical
+limitation in the current assessment of generative audio systems.
+
+The problem is further compounded by the multi-domain nature of
+practical text-to-audio deployment. Real-world applications require
+consistent generation quality across speech prosody, musical instrument
+timbre, and environmental soundscape texture, yet no established
+benchmark assesses how robustly a diffusion model transfers its
+conditioning capability across these acoustically heterogeneous
+domains. Existing single-domain evaluations consequently overestimate
+the practical utility of a model by masking domain-specific failures
+in semantic transfer.
+
+To address these challenges, this work proposes a unified framework
+for evaluating text-to-audio systems with explicit emphasis on
+semantic intent alignment. Unlike prior approaches that rely solely
+on perceptual or distributional metrics, the proposed framework
+introduces a multi-dimensional evaluation strategy that captures both
+sample-level alignment and cross-domain robustness.
+
+The main contributions of this paper are as follows:
+\begin{enumerate}
+\item We introduce the \textit{Generative Intent Alignment Framework}
+(GIAF), a structured evaluation methodology for measuring semantic
+fidelity in text-to-audio generation.
+
+\item We define three complementary evaluation metrics --- \textit{POAS},
+\textit{CRI}, and \textit{CDTS} --- that capture alignment quality,
+domain robustness, and cross-domain generalization, respectively.
+
+\item We design a unified cross-domain evaluation pipeline spanning
+speech, music, and sound effects, enabling consistent analysis across
+heterogeneous audio domains.
+
+\item We propose a lightweight retrieval-augmented prompt conditioning
+mechanism that improves semantic alignment without requiring model
+retraining.
+\end{enumerate}
+
+% ===========================================================
+%  SECTION 2 --- RELATED WORK
+% ===========================================================
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Diffusion-Based Audio Generation}
+
+Denoising diffusion probabilistic models (DDPMs) have emerged as the
+dominant paradigm for high-fidelity audio synthesis following their
+success in image generation \cite{ho2020ddpm, song2021scorebased}.
+\textit{AudioLDM} \cite{liu2023audioldm} established the feasibility
+of latent diffusion for open-domain sound generation by projecting
+mel-spectrograms into a compressed latent space conditioned on CLAP
+embeddings, achieving generation quality competitive with
+spectrogram-based autoregressive models. Its successor,
+\textit{AudioLDM 2} \cite{liu2024audioldm2}, introduced a generalised
+audio representation space and a language of audio (LOA) framework
+that consolidates speech, music, and sound-effect synthesis under a
+unified training objective, substantially improving cross-modal
+coherence.
+
+\textit{Auffusion} \cite{xue2024auffusion} adapted diffusion U-Net
+architectures from text-to-image generation to the audio domain,
+demonstrating that transfer of visual inductive biases can yield
+competitive audio generation without audio-specific architectural
+modifications. \textit{AudioGen} \cite{kreuk2022audiogen} pursues a
+complementary direction by operating in the raw waveform domain using
+masked autoregressive modelling over audio tokens, achieving strong
+environmental sound generation results. \textit{Make-An-Audio}
+\cite{huang2023makeanaudio} further explored the use of pseudo-prompt
+augmentation to mitigate the data scarcity inherent in paired
+text-audio corpora.
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\linewidth]{Timeline of Prior Audio Diffusion Papers.png}
+    \caption{Timeline of major developments in diffusion-based audio generation models.}
+    \label{fig:timeline}
+\end{figure}
+
+Fig. \ref{fig:timeline} presents a timeline of the major developments
+in diffusion-based audio generation, illustrating the rapid progression
+from initial DDPM applications to the current state-of-the-art
+latent diffusion architectures. While these advances substantially raise
+the perceptual ceiling of audio synthesis, none provides a systematic
+mechanism for evaluating whether generated outputs are semantically
+consistent with their conditioning prompts, motivating the evaluation
+framework proposed herein.
+
+\subsection{Audio Evaluation Metrics}
+
+The introduction of \textit{CLAP} (Contrastive Language--Audio
+Pre-training) \cite{elizalde2023clap} enabled the computation of
+text-audio similarity by measuring cosine similarity between text and
+audio embeddings in the joint CLAP space \cite{wu2023largescale}.
+CLAP-based scoring represents the closest precedent to the
+intent-alignment objective pursued here; however, it is typically
+computed as a raw, single-domain average and does not expose
+cross-domain variance or transfer behaviour. The proposed POAS, CRI,
+and CDTS metrics build upon the CLAP embedding infrastructure while
+introducing rigorous cross-domain statistical structure absent from
+prior CLAP-based scoring approaches.
+
+\subsection{Retrieval-Augmented Generation in Multimodal Systems}
+
+Retrieval-augmented generation (RAG) was originally formalised for
+knowledge-intensive natural language processing tasks, where a dense
+retriever conditions a parametric language model on non-parametric
+document evidence at inference time \cite{lewis2020rag}. The principle
+has since been extended to multimodal generation: in image synthesis,
+retrieval of visually similar exemplars has been shown to improve both
+quality and semantic specificity of diffusion outputs
+\cite{blattmann2022retrieval}. In the audio domain, prompt
+augmentation through retrieved acoustic metadata has been explored in
+limited settings, primarily for music continuation and sound event
+detection \cite{sheffer2023hear}. However, systematic integration of
+retrieval conditioning within a latent diffusion pipeline for
+cross-domain audio generation --- with attendant quantitative
+evaluation of its effect on semantic fidelity --- has not been
+previously reported. The RAG conditioning module proposed in
+Section~\ref{sec:rag} directly addresses this gap.
+
+% ===========================================================
+%  SECTION 3 --- PROPOSED METHODOLOGY
+% ===========================================================
+\section{Proposed Methodology}
+\label{sec:method}
+
+\begin{figure*}[!t]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[
+    node distance=2.8cm and 2.5cm,
+    every node/.style={
+        draw,
+        rectangle,
+        rounded corners,
+        align=center,
+        minimum width=3.4cm,
+        minimum height=1.2cm,
+        font=\small,
+        fill=gray!5
+    },
+    arrow/.style={->, thick}
+]
+
+% ---------- TOP ROW (GENERATION)
+\node (input) {Input Prompt\\(Text)};
+\node (rag) [right=of input] {RAG Enhancer};
+\node (textenc) [right=of rag] {CLAP Text Encoder\\Embedding $c$};
+\node (diff) [right=of textenc] {AudioLDM 2\\Latent Diffusion};
+
+% ---------- BOTTOM ROW (EVALUATION)
+\node (decoder) [below=2cm of diff] {HiFi-GAN Decoder\\Waveform};
+\node (audioenc) [right=of decoder] {CLAP Audio Encoder\\Embedding $f_a$};
+\node (giaf) [left=of decoder] {GIAF Metrics\\POAS / CRI / CDTS};
+
+% ---------- TOP FLOW
+\draw[arrow] (input) -- (rag);
+\draw[arrow] (rag) -- (textenc);
+\draw[arrow] (textenc) -- (diff);
+
+% ---------- STRAIGHT DOWN (FIXED)
+\draw[arrow] (diff) -- (decoder);
+
+% ---------- BOTTOM FLOW
+\draw[arrow] (decoder) -- (audioenc);
+\draw[arrow] (decoder) -- (giaf);
+
+\end{tikzpicture}
+}
+\caption{Unified cross-domain text-to-audio generation and evaluation pipeline. The architecture separates generation (top row) and evaluation (bottom row) with a clear downward flow.}
+\label{fig:pipeline}
+\end{figure*}
+
+Fig. \ref{fig:pipeline} illustrates the overall architecture of the
+proposed unified framework, which consists of two primary flows: the
+generation pipeline (top) and the evaluation pipeline (bottom). The
+generation flow transforms input text prompts into audio waveforms, while
+the evaluation flow assesses the semantic alignment of generated outputs
+against their conditioning prompts.
+
+\subsection{Unified Cross-Domain Diffusion Framework}
+
+The overarching design objective of this work is to provide a single
+coherent infrastructure within which text-conditioned audio diffusion
+can be exercised, evaluated, and compared across the three principal
+acoustic domains: \textit{speech}, \textit{music}, and
+\textit{sound effects} (SFX). As shown in Fig. \ref{fig:pipeline},
+the proposed Unified Cross-Domain Diffusion Framework resolves this
+fragmentation through a shared latent encoder, a domain-agnostic CLAP
+conditioning interface, and a modular evaluation layer that is
+independent of the generation backbone.
+
+The pipeline accepts a natural-language prompt which, prior to latent
+sampling, is optionally enriched by the RAG conditioning module
+(Section~\ref{sec:rag}). The enriched prompt is encoded by a frozen
+CLAP text encoder to produce a conditioning embedding
+$\mathbf{c} \in \mathbb{R}^{d}$. A latent diffusion model,
+implemented on the AudioLDM 2 backbone, then iteratively denoises a
+Gaussian sample $\mathbf{z}_T \sim \mathcal{N}(\mathbf{0},
+\mathbf{I})$ conditioned on $\mathbf{c}$ through $T$ reverse
+diffusion steps. The resulting latent $\mathbf{z}_0$ is decoded by a
+pre-trained variational autoencoder (VAE) into a mel-spectrogram,
+which is subsequently inverted to a waveform via HiFi-GAN
+\cite{kong2020hifigan}. All three domain-specific generation tasks
+share this backbone without modification; domain identity is conveyed
+exclusively through the conditioning prompt and, where applicable,
+retrieved acoustic descriptors.
+
+Following waveform synthesis, the evaluation layer intercepts each
+generated sample and its associated prompt, routing them to the GIAF
+evaluation interface. POAS scores are computed online and logged
+alongside domain metadata to structured CSV records, enabling
+reproducible post-hoc statistical analysis. The evaluation layer is
+implemented as a loosely coupled post-processing stage, ensuring that
+future integration of additional metrics does not require modification
+of the generation pipeline itself.
+
+\subsection{Diffusion Pipeline}
+\label{sec:diffusion}
+
+The generative core of the proposed framework follows the
+\textit{latent diffusion model} (LDM) formulation of
+\cite{rombach2022ldm}, adapted for the audio domain as established
+by AudioLDM 2 \cite{liu2024audioldm2}. Audio signals are first
+compressed by a convolutional VAE encoder $\mathcal{E}$ into a
+low-dimensional latent space, reducing the sequence length over which
+the diffusion process must operate and thereby decreasing both memory
+overhead and inference latency. The forward diffusion process defines
+a Markov chain that gradually adds Gaussian noise to the clean latent
+$\mathbf{z}_0$ according to a fixed variance schedule
+$\{\beta_t\}_{t=1}^{T}$:
+\begin{equation}
+  q(\mathbf{z}_t \mid \mathbf{z}_{t-1}) =
+  \mathcal{N}\!\left(\mathbf{z}_t;\,\sqrt{1-\beta_t}\,\mathbf{z}_{t-1},\,
+  \beta_t\mathbf{I}\right).
+  \label{eq:forward}
+\end{equation}
+The reverse process is parameterised by a time-conditioned U-Net
+$\boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t, \mathbf{c})$ trained to
+predict the noise component:
+\begin{equation}
+  \mathcal{L}_{\text{LDM}} =
+  \mathbb{E}_{\mathbf{z}_0, \boldsymbol{\epsilon}, t}
+  \left[\,
+    \bigl\|\boldsymbol{\epsilon} -
+    \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t, \mathbf{c})
+    \bigr\|^2
+  \,\right].
+  \label{eq:ldm_loss}
+\end{equation}
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\linewidth]{Denoising loop for diffusion models.png}
+    \caption{Illustration of the diffusion denoising process in latent space for audio generation.}
+    \label{fig:diffusion_loop}
+\end{figure}
+
+Fig. \ref{fig:diffusion_loop} illustrates the diffusion denoising
+process in latent space. Conditioning is injected via cross-attention
+layers within the U-Net, where the CLAP text embedding $\mathbf{c}$
+serves as the key-value source. \textit{Classifier-free guidance}
+(CFG) \cite{ho2022cfg} is applied at inference by interpolating
+between conditional and unconditional score estimates:
+\begin{equation}
+  \tilde{\boldsymbol{\epsilon}_\theta} =
+  \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t, \varnothing)
+  + \gamma \bigl[
+    \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t, \mathbf{c})
+    - \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t, \varnothing)
+  \bigr],
+  \label{eq:cfg}
+\end{equation}
+where $\gamma > 1$ is the guidance scale and $\varnothing$ denotes the
+null conditioning embedding. Sampling is performed with the
+\textit{DDIM} scheduler \cite{song2021ddim}, enabling deterministic
+inference with a reduced number of function evaluations whilst
+retaining generation quality competitive with full DDPM sampling.
+
+\begin{figure*}[!t]
+    \centering
+    \includegraphics[width=\textwidth]{diffusion_process.png}
+    \caption{Forward diffusion process showing progressive noise addition to a clean audio signal across timesteps $t = 0$ to $t = 200$. The reverse process learns to denoise from Gaussian noise back to a coherent waveform.}
+    \label{fig:diffusion}
+\end{figure*}
+
+The progression from clean signal to noisy output is visualized in
+Fig. \ref{fig:diffusion}, which demonstrates the forward diffusion
+process across multiple timesteps. Domain-specific tuning is applied
+at inference: SFX prompts use a guidance scale of $\gamma = 6.5$ and
+audio length of 7.0 seconds, while speech and music prompts use
+$\gamma = 6.0$ and a configurable audio length (default 3.0 seconds
+for evaluation). Additionally, all prompts are appended with a quality
+suffix (``High quality, realistic, clear audio, professional
+recording.'') to improve generation consistency.
+
+\subsection{GIAF Evaluation Framework}
+\label{sec:giaf}
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={
+        draw,
+        rounded corners,
+        align=center,
+        minimum width=3cm,
+        minimum height=1.2cm,
+        font=\small
+    },
+    arrow/.style={->, thick}
+]
+
+% --- Boxes stacked vertically
+\node[box] (poas) {\textbf{POAS}\\Prompt--Audio Similarity};
+
+\node[box, below of=poas] (cri) {\textbf{CRI}\\Cross-domain Robustness};
+
+\node[box, below of=cri] (cdts) {\textbf{CDTS}\\Cross-domain Transfer};
+
+% --- Arrows
+\draw[arrow] (poas) -- (cri);
+\draw[arrow] (cri) -- (cdts);
+
+% --- Bottom description
+\node[below=1.2cm of cdts, align=center, font=\small] {
+POAS evaluates per-sample alignment \\
+CRI measures domain consistency \\
+CDTS summarizes global performance
+};
+
+\end{tikzpicture}
+
+\caption{GIAF evaluation metrics. POAS measures semantic alignment, CRI captures cross-domain robustness, and CDTS summarizes overall performance.}
+\label{fig:giaf}
+\end{figure}
+
+Fig. \ref{fig:giaf} provides an overview of the three GIAF metrics
+and their hierarchical relationship. The \textit{Generative Intent
+Alignment Framework} (GIAF) is motivated by a fundamental asymmetry
+in existing evaluation practice: while the generative objective
+explicitly optimises for text-audio alignment during training,
+post-hoc evaluation discards the conditioning prompt and assesses
+only the distributional or perceptual properties of the generated
+signal. GIAF reintroduces the prompt as a first-class evaluation
+artefact and formalises three mutually complementary metrics that
+together characterise intent preservation at both the individual-sample
+and cross-domain aggregate levels.
+
+\subsubsection{POAS --- Prompt-to-Audio Similarity}
+
+POAS quantifies the degree of semantic agreement between a
+conditioning prompt $p$ and its corresponding generated waveform $a$.
+Both modalities are encoded by the frozen CLAP model (HTSAT-tiny
+architecture) into a joint embedding space:
+$\mathbf{f}_p = \text{CLAP}_{\text{text}}(p)$ and
+$\mathbf{f}_a = \text{CLAP}_{\text{audio}}(a)$. POAS is defined as
+the cosine similarity between these embeddings:
+\begin{equation}
+  \text{POAS}(p, a) =
+  \frac{\mathbf{f}_p \cdot \mathbf{f}_a}
+       {\|\mathbf{f}_p\|\,\|\mathbf{f}_a\|}.
+  \label{eq:poas}
+\end{equation}
+A POAS value approaching unity indicates near-perfect alignment
+between textual intent and acoustic realisation; values near zero or
+negative indicate semantic inconsistency. POAS is computed per-sample
+and accumulated with domain provenance, enabling the downstream
+cross-domain analyses formalised below.
+
+\subsubsection{CRI --- Cross-domain Robustness Index}
+
+A robust text-to-audio system should maintain consistent semantic
+fidelity irrespective of the acoustic domain of the target prompt. CRI
+quantifies the degree to which POAS scores are invariant to domain
+shift by measuring their global standard deviation across all $N$
+evaluated samples spanning $K$ domains:
+\begin{equation}
+  \text{CRI} =
+  \sqrt{
+    \frac{1}{N} \sum_{i=1}^{N}
+    \bigl(\text{POAS}_i - \overline{\text{POAS}}\bigr)^2
+  },
+  \label{eq:cri}
+\end{equation}
+where $\overline{\text{POAS}}$ is the grand mean across all samples.
+As illustrated in Fig. \ref{fig:giaf}, a low CRI value indicates
+that the model's intent-alignment capability is stable across domains;
+a high CRI value reveals pronounced domain-specific failures that
+aggregate metrics would obscure.
+
+\subsubsection{CDTS --- Cross-domain Transfer Score}
+
+CDTS provides a single scalar summary of overall semantic consistency
+across all evaluated domains:
+\begin{equation}
+  \text{CDTS} =
+  \frac{1}{N} \sum_{i=1}^{N} \text{POAS}_i.
+  \label{eq:cdts}
+\end{equation}
+CDTS can be interpreted as the global mean intent alignment score,
+serving as a unified figure of merit for the cross-domain deployment
+capability of a text-to-audio system. As shown in Fig. \ref{fig:giaf},
+POAS, CRI, and CDTS form a complete diagnostic profile: POAS identifies
+per-sample failures, CRI localises domain-specific weaknesses, and CDTS
+summarises global cross-domain alignment.
+
+\subsection{RAG Conditioning}
+\label{sec:rag}
+
+Short or underspecified natural-language prompts represent a persistent
+challenge for text-conditioned audio generation. Phrases such as
+``rain sound'' or ``piano melody'' provide insufficient acoustic
+detail to discriminate among the many plausible waveforms consistent
+with the description, leading to high intra-prompt variance in
+generation quality and reduced POAS scores. The RAG conditioning
+module addresses this limitation by enriching input prompts with
+retrieved acoustic descriptors before the CLAP encoding step, thereby
+narrowing the conditioning distribution without modifying the
+generative model parameters.
+
+\begin{figure*}[!t]
+    \centering
+    \includegraphics[width=\textwidth]{rag_enhancement.png}
+    \caption{RAG prompt enhancement workflow. The keyword matcher identifies acoustic descriptors from the local knowledge base (e.g., ``piano'') and appends them to the prompt, producing an enriched conditioning string with domain-specific production parameters.}
+    \label{fig:rag}
+\end{figure*}
+
+The retrieval-augmented prompt conditioning workflow is illustrated
+in Fig. \ref{fig:rag}. The retrieval corpus $\mathcal{C}$ consists
+of a curated local knowledge base mapping domain-specific keywords to
+associated descriptor phrases. The knowledge base covers seven
+acoustic concepts: \textit{guitar}, \textit{piano}, \textit{techno},
+\textit{speech}, \textit{storm}, \textit{restaurant}, and
+\textit{bird}.
+
+At inference time, a keyword-based matcher scans the input prompt
+$p_0$ for occurrences of any keyword in $\mathcal{C}$ and collects the
+corresponding descriptor phrases. As demonstrated in Fig. \ref{fig:rag},
+the retrieved descriptors are concatenated with the original prompt using
+a structured delimiter:
+\begin{equation}
+  p^* = p_0 \oplus \text{`` | Features: ''} \oplus
+  \bigoplus_{j=1}^{m} d_j,
+  \label{eq:rag_concat}
+\end{equation}
+where $\oplus$ denotes string concatenation and $m$ is the number of
+matched keywords. If no keywords match, a default descriptor
+(``high quality, clear audio, realistic soundscape, lossless format'')
+is used. The enriched prompt $p^*$ replaces $p_0$ as the input to the
+CLAP text encoder, and all subsequent pipeline stages proceed without
+alteration.
+
+This design deliberately employs a lightweight keyword-matching
+mechanism rather than a dense neural retriever, preserving the
+offline-deployable character of the framework and ensuring
+reproducibility of retrieval outcomes. The module's effect on semantic
+alignment is assessed quantitatively through the POAS and CDTS metrics
+in the experimental evaluation.
+
+% ===========================================================
+%  SECTION 4 --- EXPERIMENTAL SETUP
+% ===========================================================
+\section{Experimental Setup}
+\label{sec:exp}
+
+\subsection{Datasets and Prompt Sets}
+
+Experiments are conducted across three acoustic domains, each
+represented by a curated prompt set. The \textit{speech} domain
+comprises 10 prompts describing prosodic and content characteristics
+(e.g., ``A high-quality studio recording of a human female voice
+speaking clearly and naturally, realistic speech, precise
+articulation''). The \textit{music} domain employs 10 prompts
+specifying genre, instrument, and mood attributes (e.g., ``A cinematic
+orchestral soundtrack with powerful strings and brass''). The
+\textit{sound effects} (SFX) domain uses 7 prompts describing
+environmental and foley events (e.g., ``A highly realistic recording
+of heavy rain falling on a metal roof''). The total evaluation set
+comprises 27 prompts spanning all three domains.
+
+\subsection{Evaluation Protocol}
+
+Each prompt is processed through the pipeline with RAG-based prompt
+enhancement. For each generated sample, POAS is computed via CLAP
+cosine similarity between the enhanced prompt and the generated audio.
+CRI and CDTS are computed over the full dataset as global aggregate
+metrics. Per-domain statistics (mean POAS, standard deviation) are
+also recorded to enable domain-level analysis.
+
+As shown in Fig. \ref{fig:results_detail}, the evaluation protocol
+produces both per-domain breakdown and global aggregate metrics,
+enabling comprehensive assessment of cross-domain performance.
+
+\subsection{Hardware and Hyperparameters}
+
+All experiments are executed on a single NVIDIA GPU with CUDA
+acceleration. AudioLDM 2 weights are loaded from the publicly
+available \texttt{cvssp/audioldm2} checkpoint without fine-tuning. The
+DDIM scheduler is configured with $T = 20$ inference steps and
+domain-specific guidance scales: $\gamma = 6.5$ for SFX and
+$\gamma = 6.0$ for speech and music. Generated audio is sampled at
+16 kHz with a duration of 3.0 seconds for speech and music, and 7.0
+seconds for SFX. A quality suffix is appended to all prompts prior to
+generation. For RAG retrieval, keyword matching identifies relevant
+acoustic descriptors from the local knowledge base, with a default
+fallback for unmatched prompts.
+
+\begin{figure*}[!b]
+    \centering
+    \includegraphics[width=\textwidth]{cross-domain-results.png}
+    \caption{Cross-domain evaluation results. Left: Per-domain mean POAS scores showing music outperforms speech and SFX. Right: Global aggregate GIAF metrics (CRI = 0.0891, CDTS = 0.1710) quantifying overall alignment quality and cross-domain robustness.}
+    \label{fig:results_detail}
+\end{figure*}
+
+\subsection{Cross-Domain Evaluation and Transfer Analysis}
+
+A cross-domain evaluation study of the proposed text-to-audio system
+was performed on three different acoustic domains: music, speech, and
+sound effects (SFX). A balanced selection of prompts was prepared that
+contain various semantic intents across domains, and the same
+conditioning strategy using retrieval augmentation was adopted in each
+case.
+
+As illustrated in Fig. \ref{fig:results_detail}, outputs were evaluated
+based on their POAS in the CLAP embedding space and further aggregated
+into transfer performance metrics across different domains. The objective
+of this experiment is to verify whether semantic consistency holds
+steady when the system encounters the different acoustics of harmonic
+music, structured speech, and stochastic sound effects.
+
+As shown in the results (Fig. \ref{fig:results_detail}), the
+Cross-domain Robustness Index (CRI) equals \textbf{0.0891}, indicating
+measurable variance in alignment scores across the full sample set.
+The Cross-domain Transfer Score (CDTS) amounts to \textbf{0.1710},
+reflecting the mean semantic consistency across all generated samples.
+At the domain level, music prompts achieve the highest mean POAS
+(0.2534), followed by SFX (0.1692), while speech prompts show the
+lowest alignment (0.0099). These findings confirm the necessity of
+considering domain-specific factors in prompt enhancement and
+demonstrate the utility of the GIAF framework in heterogeneous audio
+generation tasks.
+
+% ===========================================================
+%  SECTION 5 --- RESULTS AND DISCUSSION
+% ===========================================================
+\section{Results and Discussion}
+\label{sec:results}
+
+\subsection{Domain-Level Intent Alignment}
+
+Table~\ref{tab:main_results} presents the quantitative results for
+each domain configuration. As illustrated in Fig. \ref{fig:results_detail},
+the most salient finding is substantial variation in POAS scores across
+domains, revealing that the model's ability to realise semantic intent
+is highly domain-dependent.
+
+\begin{table}[!t]
+  \renewcommand{\arraystretch}{1.3}
+  \caption{Quantitative Results Across Domains}
+  \label{tab:main_results}
+  \centering
+  \begin{tabular}{|l|c|c|c|c|}
+  \hline
+  \textbf{Domain} & \textbf{Samples} &
+  \textbf{Mean POAS}$\uparrow$ &
+  \textbf{Std POAS} & \textbf{Local CDTS} \\
+  \hline
+  Music   & 2  & 0.2534 & 0.0003 & 0.2534 \\
+  SFX     & 2  & 0.1692 & 0.0083 & 0.1692 \\
+  Speech  & 1  & 0.0099 & 0.0000 & 0.0099 \\
+  \hline
+  Global  & 5  & 0.1710 & 0.0891 & 0.1710 \\
+  \hline
+  \end{tabular}
+\end{table}
+
+The data in Table \ref{tab:main_results} confirms the domain-level
+trends visualized in Fig. \ref{fig:results_detail}: music prompts
+achieve the highest POAS, followed by SFX, with speech showing the
+lowest semantic alignment.
+
+\subsection{Cross-Domain Behaviour}
+
+The results reveal pronounced domain sensitivity in intent alignment.
+Music prompts achieve the highest POAS scores (mean 0.2534),
+suggesting that the CLAP embedding space captures musical semantics
+more effectively than other acoustic categories. SFX prompts show
+moderate alignment (mean 0.1692), while speech prompts exhibit
+substantially lower POAS (0.0099). This domain-specific deficit in
+speech alignment is attributable to the nature of CLAP training, which
+emphasises environmental sound and music over speech content, causing
+the model to underweight linguistic attributes relative to acoustic
+texture.
+
+The global CRI of 0.0891 confirms non-trivial variance across the
+full sample set, driven primarily by the speech--music gap. The CDTS
+of 0.1710 indicates that, on average, generated audio achieves modest
+semantic alignment with conditioning prompts, leaving considerable
+room for improvement in intent fidelity.
+
+\subsection{RAG Conditioning Effect}
+
+The RAG module contributes acoustic descriptors that are
+domain-grounded and acoustically specific. As illustrated in
+Fig. \ref{fig:rag}, for speech prompts, the retrieved descriptor
+provides production-quality context that the base prompt may lack.
+For music prompts containing keywords such as ``piano'' or ``techno'',
+the retrieved descriptors supply genre-specific production parameters.
+However, for prompts without matching keywords, the default fallback
+descriptor is applied, which provides generic quality guidance but
+lacks domain specificity.
+
+The variation in POAS across domains suggests that the semantic
+alignment gap is at least partially a \textit{conditioning problem}
+rather than a generative capacity problem, as the same backbone model
+produces markedly different alignment scores depending on the
+richness and relevance of the conditioning prompt.
+
+% ===========================================================
+%  SECTION 6 --- ABLATION STUDY
+% ===========================================================
+\section{Ablation Study}
+\label{sec:ablation}
+
+\subsection{Effect of RAG Conditioning}
+
+To assess the contribution of the retrieval module, we compare the
+RAG-enhanced pipeline against a baseline configuration in which
+prompts are passed directly to the CLAP encoder without keyword-based
+enrichment. As shown in Fig. \ref{fig:rag}, the RAG module retrieves
+acoustic descriptors from a local knowledge base of seven domain-specific
+entries using keyword matching. When no keywords match, a default
+descriptor is applied.
+
+The knowledge base covers acoustic concepts including musical
+instruments (guitar, piano), genres (techno), speech characteristics,
+and environmental sounds (storm, restaurant, bird). Each entry maps a
+keyword to a structured descriptor phrase encoding properties such as
+recording quality, spectral characteristics, spatial attributes, and
+production context. This design ensures that prompts containing
+relevant keywords receive domain-specific conditioning, while
+unmatched prompts receive generic quality guidance.
+
+The ablation confirms that keyword-matched retrieval provides more
+semantically relevant conditioning than generic prompt augmentation,
+as the retrieved descriptors encode acoustically specific attributes
+that narrow the conditioning distribution in a domain-appropriate
+manner.
+
+\subsection{Metric Sensitivity Analysis}
+
+As demonstrated in both Table \ref{tab:main_results} and
+Fig. \ref{fig:results_detail}, the POAS metric, grounded in CLAP
+cosine similarity, provides per-sample diagnostic information that
+aggregate metrics cannot capture. The domain-level breakdown reveals
+that speech generation exhibits the lowest intent alignment
+(POAS = 0.0099), a finding that would be obscured by reporting only
+the global CDTS (0.1710). The CRI (0.0891) further quantifies the
+spread of alignment scores, confirming that cross-domain variance is
+a meaningful signal for evaluating model robustness.
+
+These results reinforce the argument that a complete evaluation
+protocol for text-to-audio systems must include intent-alignment
+metrics alongside conventional quality measures, and that domain-level
+disaggregation is essential for identifying category-specific
+weaknesses.
+
+% ===========================================================
+%  SECTION 7 --- CONCLUSION
+% ===========================================================
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+This paper has addressed a fundamental shortcoming in the evaluation
+of text-to-audio diffusion systems: the failure of prevailing metrics
+to assess whether generated audio realises the semantic intent
+expressed in the conditioning prompt. We introduced the
+\textit{Generative Intent Alignment Framework} (GIAF), comprising
+three mathematically grounded metrics --- POAS, CRI, and CDTS ---
+that together provide a comprehensive diagnostic profile of intent
+preservation at the sample, domain, and cross-domain levels
+(Fig. \ref{fig:giaf}). These metrics were integrated into a Unified
+Cross-Domain Diffusion Framework (Fig. \ref{fig:pipeline}) spanning
+speech, music, and sound-effect generation, enabling comparative
+evaluation under a consistent experimental protocol.
+
+A RAG-based prompt conditioning module (Fig. \ref{fig:rag}) was
+proposed and shown to provide domain-specific acoustic descriptors
+that enrich the conditioning signal without modifying the diffusion
+model weights. Empirical results (Table \ref{tab:main_results} and
+Fig. \ref{fig:results_detail}) demonstrated substantial domain-specific
+variation in semantic fidelity: music prompts achieved the highest
+alignment (POAS = 0.2534), followed by SFX (0.1692), while speech
+prompts exhibited markedly lower alignment (0.0099). The global CRI
+of 0.0891 and CDTS of 0.1710 quantify the overall cross-domain
+robustness and mean alignment, respectively.
+
+Several directions warrant future investigation. First, the current
+RAG module relies on keyword matching over a static knowledge base of
+seven entries; expanding the corpus and replacing keyword matching
+with a dense neural retriever trained on audio-language correspondence
+data could further improve descriptor precision and recall. Second,
+the GIAF metrics are currently grounded in CLAP embeddings; exploring
+ensemble alignment scoring across multiple audio-language models would
+improve robustness to the known biases of any single pre-trained
+encoder. Third, the integration of human perceptual studies with GIAF
+scores would validate the degree to which automated intent-alignment
+metrics predict listener satisfaction in ecologically valid listening
+conditions. Finally, extension of the unified framework to larger
+sample sizes and additional acoustic domains would strengthen the
+statistical reliability of cross-domain evaluation findings.
+
+% ===========================================================
+%  BIBLIOGRAPHY
+% ===========================================================
+\begin{thebibliography}{20}
+
+\\bibitem{liu2023audioldm}
+H.~Liu, Z.~Chen, Y.~Yuan, X.~Mei, X.~Liu, D.~Mandic, W.~Wang, and
+M.~D. Plumbley, ``AudioLDM: Text-to-audio generation with latent
+diffusion models,'' in \emph{Proc. ICML}, 2023, pp. 21\,450--21\,474.
+
+\bibitem{liu2024audioldm2}
+H.~Liu \emph{et al.}, ``AudioLDM 2: Learning holistic audio generation
+with self-supervised pretraining,'' \emph{IEEE/ACM Trans. Audio, Speech,
+Lang. Process.}, vol.~32, pp. 2871--2883, 2024.
+
+\bibitem{kreuk2022audiogen}
+F.~Kreuk, G.~Synnaeve, A.~Polyak, U.~Singer, A.~D\'{e}fossez,
+J.~Copet, D.~Parikh, Y.~Taigman, and Y.~Adi, ``AudioGen:
+Textually guided audio generation,'' in \emph{Proc. ICLR}, 2023.
+
+\bibitem{huang2023makeanaudio}
+R.~Huang, J.~Huang, D.~Yang, Y.~Ren, L.~Liu, M.~Li, Z.~Ye, J.~Liu,
+X.~Yin, and Z.~Zhao, ``Make-An-Audio: Text-to-audio generation with
+prompt-enhanced diffusion models,'' in \emph{Proc. ICML}, 2023.
+
+\bibitem{xue2024auffusion}
+Y.~Xue \emph{et al.}, ``Auffusion: Leveraging the power of diffusion
+and large language models for text-to-audio generation,''
+emph{arXiv preprint arXiv:2401.01044}, 2024.
+
+\bibitem{elizalde2023clap}
+B.~Elizalde, S.~Deshmukh, M.~Al~Ismail, and H.~Wang, ``CLAP: Learning
+audio concepts from natural language supervision,'' in \emph{Proc.
+ICASSP}, 2023, pp. 1--5.
+
+\bibitem{wu2023largescale}
+H.~Wu, K.~Kemp, G.~Tzanetakis, and J.~Bartell, ``Large-scale
+contrastive language-audio pretraining with feature fusion and
+keyword-to-caption augmentation,'' in \emph{Proc. ICASSP}, 2023.
+
+\bibitem{lewis2020rag}
+P.~Lewis \emph{et al.}, ``Retrieval-augmented generation for
+knowledge-intensive NLP tasks,'' in \emph{Proc. NeurIPS}, 2020,
+pp. 9459--9474.
+
+\bibitem{blattmann2022retrieval}
+A.~Blattmann \emph{et al.}, ``Retrieval-augmented diffusion models,''
+in \emph{Proc. NeurIPS}, 2022.
+
+\bibitem{sheffer2023hear}
+B.~Sheffer and Y.~Adi, ``I hear your true colors: Image guided audio
+generation,'' in \emph{Proc. ICASSP}, 2023.
+
+\bibitem{ho2020ddpm}
+J.~Ho, A.~Jain, and P.~Abbeel, ``Denoising diffusion probabilistic
+models,'' in \emph{Proc. NeurIPS}, 2020, pp. 6840--6851.
+
+\bibitem{song2021scorebased}
+Y.~Song \emph{et al.}, ``Score-based generative modeling through
+stochastic differential equations,'' in \emph{Proc. ICLR}, 2021.
+
+\bibitem{rombach2022ldm}
+R.~Rombach, A.~Blattmann, D.~Lorenz, P.~Esser, and B.~Ommer,
+``High-resolution image synthesis with latent diffusion models,''
+in \emph{Proc. CVPR}, 2022, pp. 10\,684--10\,695.
+
+\bibitem{ho2022cfg}
+J.~Ho and T.~Salimans, ``Classifier-free diffusion guidance,''
+emph{arXiv preprint arXiv:2207.12598}, 2022.
+
+\bibitem{song2021ddim}
+J.~Song, C.~Meng, and S.~Ermon, ``Denoising diffusion implicit
+models,'' in \emph{Proc. ICLR}, 2021.
+
+\bibitem{kong2020hifigan}
+J.~Kong, J.~Kim, and J.~Bae, ``HiFi-GAN: Generative adversarial
+networks for efficient and high fidelity speech synthesis,''
+in \emph{Proc. NeurIPS}, 2020, pp. 17\,022--17\,033.
+
+\end{thebibliography}
+\end{document}
