@@ -29,9 +29,9 @@ def main():
     # For full run, comment out the limit.
     #df = df.head(5)
     df = pd.concat([
-        df[df["domain"] == "music"].head(2),
-        df[df["domain"] == "speech"].head(1),
-        df[df["domain"] == "sfx"].head(2),
+        df[df["domain"] == "music"].head(10),
+        df[df["domain"] == "speech"].head(10),
+        df[df["domain"] == "sfx"].head(10),
     ], ignore_index=True)
 
     generator = AudioGenerator()
@@ -52,8 +52,8 @@ def main():
         generator.generate(
             prompt=enhanced_prompt, 
             output_path=audio_filename, 
-            num_inference_steps=20, # reduced for speed
-            audio_length_in_s=3.0
+            num_inference_steps=40, # reduced for speed
+            audio_length_in_s=5.0
         )
         
         # 3. Evaluate alignment (CLAP/POAS)
