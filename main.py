@@ -45,15 +45,15 @@ def main():
         domain = row['domain']
         
         # 1. Option: RAG Prompt Enhancement
-        enhanced_prompt = rag.enhance(original_prompt)
+        enhanced_prompt = rag.enhance(original_prompt, domain)
         
         # 2. Generate Audio
         audio_filename = f"outputs/audio/{domain}_{index}.wav"
         generator.generate(
             prompt=enhanced_prompt, 
             output_path=audio_filename, 
-            num_inference_steps=40, # reduced for speed
-            audio_length_in_s=5.0
+            num_inference_steps=120, # reduced for speed
+            audio_length_in_s=8.0
         )
         
         # 3. Evaluate alignment (CLAP/POAS)

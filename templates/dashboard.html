@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text-to-Audio Pipeline</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; padding: 1.5rem; }
+    .section { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    label { font-size: 13px; color: #555; display: block; margin-bottom: 6px; }
+    textarea, select, input[type=number] { width: 100%; font-size: 14px; font-family: inherit; color: #1a1a18; background: #f5f5f3; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 10px 12px; resize: vertical; }
+    textarea:focus, select:focus, input[type=number]:focus { outline: none; border-color: rgba(0,0,0,0.4); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 14px; font-family: inherit; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: transparent; color: #1a1a18; cursor: pointer; transition: background 0.15s; }
+    .btn:hover { background: #f5f5f3; }
+    .btn:active { transform: scale(0.98); }
+    .btn.primary { background: #e6f1fb; color: #0c447c; border-color: #b5d4f4; }
+    .btn.primary:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1rem; }
+    .metric-card { background: #f5f5f3; border-radius: 8px; padding: 1rem; }
+    .metric-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .metric-value { font-size: 22px; font-weight: 500; color: #1a1a18; }
+    .metric-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 10px; font-weight: 500; font-size: 12px; color: #888; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+    td { padding: 8px 10px; border-bottom: 0.5px solid rgba(0,0,0,0.08); color: #1a1a18; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+    .badge.music { background: #EEEDFE; color: #3C3489; }
+    .badge.speech { background: #E1F5EE; color: #085041; }
+    .badge.sfx { background: #FAEEDA; color: #633806; }
+    .badge.ambient { background: #FAECE7; color: #712B13; }
+    .log { font-family: monospace; font-size: 12px; color: #555; background: #f5f5f3; border-radius: 8px; padding: 12px; max-height: 120px; overflow-y: auto; line-height: 1.6; }
+    .log .ok { color: #0f6e56; }
+    .log .err { color: #993c1d; }
+    .empty-state { text-align: center; padding: 2rem; color: #aaa; font-size: 13px; }
+    .score-bar { display: flex; align-items: center; gap: 8px; }
+    .score-fill { height: 6px; background: #378add; border-radius: 3px; }
+    .score-text { font-size: 12px; font-weight: 500; min-width: 36px; text-align: right; }
+    .prompt-preview { font-size: 12px; color: #888; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rag-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #555; cursor: pointer; }
+    .toggle { width: 34px; height: 18px; background: rgba(0,0,0,0.15); border-radius: 9px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .toggle.on { background: #185FA5; }
+    .toggle::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: left 0.2s; }
+    .toggle.on::after { left: 18px; }
+    .steps-bar { display: flex; align-items: center; gap: 8px; }
+    .steps-bar input[type=range] { flex: 1; }
+    .section-title { font-size: 13px; font-weight: 500; color: #1a1a18; margin-bottom: 12px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    h1 { font-size: 18px; font-weight: 500; margin-bottom: 1.25rem; color: #1a1a18; }
+  </style>
+</head>
+<body>
+
+  <h1>Text-to-audio pipeline</h1>
+
+  <div class="section">
+    <div class="section-title">Prompt input</div>
+    <label>Your prompt</label>
+    <textarea id="prompt" rows="3" placeholder="e.g. A thunderstorm rolling over a dense forest at night..."></textarea>
+    <div class="row">
+      <div>
+        <label style="margin-top:12px">Domain</label>
+        <select id="domain">
+          <option value="sfx">Sound effect (sfx)</option>
+          <option value="music">Music</option>
+          <option value="speech">Speech</option>
+          <option value="ambient">Ambient</option>
+        </select>
+      </div>
+      <div>
+        <label style="margin-top:12px">Audio length (s)</label>
+        <input type="number" id="audio_len" value="8" min="1" max="30" step="0.5">
+      </div>
+    </div>
+    <div style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <div>
+        <label style="margin-bottom:4px">Inference steps: <span id="steps-out">120</span></label>
+        <div class="steps-bar">
+          <input type="range" id="steps" min="20" max="300" value="120" step="10">
+        </div>
+      </div>
+      <div class="rag-toggle" id="rag-toggle">
+        <div class="toggle on" id="rag-knob"></div>
+        <span>RAG prompt enhancement</span>
+      </div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:8px;">
+      <button class="btn primary" id="generate-btn">Generate ↗</button>
+      <button class="btn" id="clear-btn">Clear results</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric-card">
+      <div class="metric-label">Avg POAS (CLAP)</div>
+      <div class="metric-value" id="avg-poas">—</div>
+      <div class="metric-sub">prompt-to-audio similarity</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">CRI variance</div>
+      <div class="metric-value" id="cri-var">—</div>
+      <div class="metric-sub">cross-domain robustness</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Runs</div>
+      <div class="metric-value" id="run-count">0</div>
+      <div class="metric-sub">generations this session</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="header">
+      <div class="section-title" style="margin-bottom:0">Generation log</div>
+      <span id="status-badge" style="font-size:12px; color:#aaa;">idle</span>
+    </div>
+    <div class="log" id="log"><span style="color:#aaa">Waiting for first generation…</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Results</div>
+    <div id="results-wrap">
+      <div class="empty-state">No generations yet. Submit a prompt above.</div>
+    </div>
+  </div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────────
+    // Since this file is served by Flask, API calls go to the same origin.
+    // Change this if running the UI separately (e.g. "http://localhost:5000").
+    const API_BASE = "";
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let ragEnabled = true;
+    let results = [];
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const ragToggle   = document.getElementById("rag-toggle");
+    const ragKnob     = document.getElementById("rag-knob");
+    const stepsInput  = document.getElementById("steps");
+    const stepsOut    = document.getElementById("steps-out");
+    const logEl       = document.getElementById("log");
+    const statusBadge = document.getElementById("status-badge");
+    const generateBtn = document.getElementById("generate-btn");
+
+    // ── Controls ──────────────────────────────────────────────────────────────
+    ragToggle.addEventListener("click", () => {
+      ragEnabled = !ragEnabled;
+      ragKnob.classList.toggle("on", ragEnabled);
+    });
+
+    stepsInput.addEventListener("input", () => { stepsOut.textContent = stepsInput.value; });
+
+    document.getElementById("clear-btn").addEventListener("click", async () => {
+      await fetch(`${API_BASE}/results`, { method: "DELETE" });
+      results = [];
+      renderResults();
+      updateMetricsDisplay({ avg_poas: null, cri_variance: null, run_count: 0 });
+      logEl.innerHTML = '<span style="color:#aaa">Cleared. Waiting for next generation…</span>';
+      statusBadge.textContent = "idle";
+    });
+
+    // ── Logging ───────────────────────────────────────────────────────────────
+    function appendLog(msg, type = "") {
+      const el = document.createElement("div");
+      el.className = type;
+      el.textContent = msg;
+      if (logEl.querySelector("span")) logEl.innerHTML = "";
+      logEl.appendChild(el);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // ── Generate ──────────────────────────────────────────────────────────────
+    generateBtn.addEventListener("click", async () => {
+      const prompt   = document.getElementById("prompt").value.trim();
+      const domain   = document.getElementById("domain").value;
+      const audioLen = parseFloat(document.getElementById("audio_len").value);
+      const steps    = parseInt(stepsInput.value);
+
+      if (!prompt) { appendLog("⚠ Please enter a prompt.", "err"); return; }
+
+      generateBtn.disabled = true;
+      statusBadge.textContent = "running…";
+      statusBadge.style.color = "#185FA5";
+
+      try {
+        appendLog(`Starting: "${prompt.slice(0, 60)}${prompt.length > 60 ? "…" : ""}"`);
+
+        const res = await fetch(`${API_BASE}/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt,
+            domain,
+            use_rag: ragEnabled,
+            num_inference_steps: steps,
+            audio_length_in_s: audioLen,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+
+        const record = await res.json();
+
+        if (record.rag_used) appendLog("RAG enhanced prompt ready");
+        appendLog(`CLAP evaluation: POAS = ${record.poas_score}`, "ok");
+        appendLog(`Saved → ${record.audio_file}`, "ok");
+
+        results.push({
+          id:       record.id,
+          domain:   record.domain,
+          prompt:   record.original_prompt,
+          enhanced: record.enhanced_prompt,
+          poas:     record.poas_score,
+          audioFile: record.audio_file,
+          steps,
+          audioLen,
+        });
+
+        renderResults();
+
+        // Fetch authoritative metrics from server
+        const mRes = await fetch(`${API_BASE}/metrics`);
+        const metrics = await mRes.json();
+        updateMetricsDisplay(metrics);
+
+      } catch (err) {
+        appendLog(`Error: ${err.message}`, "err");
+      } finally {
+        generateBtn.disabled = false;
+        statusBadge.textContent = `last run: ${new Date().toLocaleTimeString()}`;
+        statusBadge.style.color = "#aaa";
+      }
+    });
+
+    // ── Render helpers ────────────────────────────────────────────────────────
+    function scoreBar(poas) {
+          const pct = Math.round(poas * 100);
+          return `<div class="score-bar">
+            <div style="flex:1;height:6px;background:rgba(0,0,0,0.08);border-radius:3px;">
+              <div class="score-fill" style="width:${pct}%"></div>
+            </div>
+            <span class="score-text">${poas.toFixed(3)}</span>
+          </div>`;
+        }
+
+        function renderResults() {
+      const wrap = document.getElementById("results-wrap");
+
+      if (!results.length) {
+        wrap.innerHTML = '<div class="empty-state">No generations yet. Submit a prompt above.</div>';
+        return;
+      }
+
+      const rows = [...results].reverse().map(r => `
+        <tr>
+          <td style="font-size:12px;color:#888">#${r.id}</td>
+          <td><span class="badge ${r.domain}">${r.domain}</span></td>
+          <td><div class="prompt-preview" title="${r.prompt}">${r.prompt}</div></td>
+          <td>${scoreBar(r.poas)}</td>
+          <td style="font-size:11px;color:#aaa">${r.audioLen}s / ${r.steps} steps</td>
+          <td>
+            <audio controls preload="metadata" style="width:220px;">
+              <source src="/outputs/audio/${r.audioFile.split('/').pop()}" type="audio/wav">
+              Your browser does not support audio playback.
+            </audio>
+          </td>
+        </tr>
+      `).join("");
+
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Domain</th>
+              <th>Prompt</th>
+              <th>POAS</th>
+              <th>Config</th>
+              <th>Generated Audio</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function updateMetricsDisplay(m) {
+      document.getElementById("avg-poas").textContent =
+        m.avg_poas !== null && m.avg_poas !== undefined ? parseFloat(m.avg_poas).toFixed(4) : "—";
+      document.getElementById("cri-var").textContent =
+        m.cri_variance !== null && m.cri_variance !== undefined ? parseFloat(m.cri_variance).toFixed(5) : (m.run_count >= 1 ? "need ≥2 domains" : "—");
+      document.getElementById("run-count").textContent = m.run_count ?? 0;
+    }
+  </script>
+</body>
+</html>
