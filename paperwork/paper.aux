@@ -1,0 +1,139 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{liu2023audioldm,kreuk2022audiogen,huang2023makeanaudio}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{I}{1}{Introduction}{section.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Overview of the proposed unified text-to-audio pipeline. The system separates the generation stage (AudioLDM\nobreakspace  {}2 for music/SFX, SpeechT5 for speech) from the evaluation stage (GIAF metrics: POAS, CRI, CDTS), with a RAG conditioning module optionally enriching the input prompt before CLAP encoding.\relax }}{1}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:system_arch}{{1}{1}{Overview of the proposed unified text-to-audio pipeline. The system separates the generation stage (AudioLDM~2 for music/SFX, SpeechT5 for speech) from the evaluation stage (GIAF metrics: POAS, CRI, CDTS), with a RAG conditioning module optionally enriching the input prompt before CLAP encoding.\relax }{figure.caption.1}{}}
+\citation{ho2020ddpm,song2021scorebased}
+\citation{liu2023audioldm}
+\citation{liu2024audioldm2}
+\citation{xue2024auffusion}
+\citation{kreuk2022audiogen}
+\citation{huang2023makeanaudio}
+\citation{ao2021speecht5}
+\citation{kilgour2018fad}
+\@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{2}{section.2}\protected@file@percent }
+\newlabel{sec:related}{{II}{2}{Related Work}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Diffusion-Based Audio Generation}{2}{subsection.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Forward diffusion process showing progressive noise addition to a clean mel-spectrogram across timesteps $t = 0$ to $t = 200$. The darker (noisier) representations at higher $t$ values correspond to Gaussian noise; the reverse diffusion process (conditioned on the CLAP text embedding) learns to recover the clean structure.\relax }}{2}{figure.caption.2}\protected@file@percent }
+\newlabel{fig:diffusion}{{2}{2}{Forward diffusion process showing progressive noise addition to a clean mel-spectrogram across timesteps $t = 0$ to $t = 200$. The darker (noisier) representations at higher $t$ values correspond to Gaussian noise; the reverse diffusion process (conditioned on the CLAP text embedding) learns to recover the clean structure.\relax }{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Audio Evaluation Metrics}{2}{subsection.2.2}\protected@file@percent }
+\citation{elizalde2023clap}
+\citation{wu2023largescale}
+\citation{graves2006ctc}
+\citation{lewis2020rag}
+\citation{blattmann2022retrieval}
+\citation{sheffer2023hear}
+\citation{brown2020gpt3}
+\citation{huang2023makeanaudio}
+\citation{rombach2022ldm}
+\citation{liu2024audioldm2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}Retrieval-Augmented Generation in Multimodal Systems}{3}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-D}}Prompt Engineering for Generative Audio}{3}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}Proposed Methodology}{3}{section.3}\protected@file@percent }
+\newlabel{sec:method}{{III}{3}{Proposed Methodology}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Unified Cross-Domain Diffusion Framework}{3}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Diffusion Pipeline}{3}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:diffusion}{{\mbox  {III-B}}{3}{Diffusion Pipeline}{subsection.3.2}{}}
+\citation{ho2022cfg}
+\citation{song2021ddim}
+\citation{ao2021speecht5}
+\citation{panayotov2015librispeech}
+\citation{veaux2017cstr}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Unified cross-domain text-to-audio generation and evaluation pipeline. The top row carries the generation flow (prompt enrichment $\to $ CLAP encoding $\to $ latent diffusion / TTS $\to $ waveform synthesis), while the bottom row implements the intent-alignment evaluation flow (CLAP audio encoding $\to $ GIAF metrics). The decoupled architecture ensures evaluation is independent of the generative backbone.\relax }}{4}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:pipeline}{{3}{4}{Unified cross-domain text-to-audio generation and evaluation pipeline. The top row carries the generation flow (prompt enrichment $\to $ CLAP encoding $\to $ latent diffusion / TTS $\to $ waveform synthesis), while the bottom row implements the intent-alignment evaluation flow (CLAP audio encoding $\to $ GIAF metrics). The decoupled architecture ensures evaluation is independent of the generative backbone.\relax }{figure.caption.3}{}}
+\newlabel{eq:forward}{{1}{4}{Diffusion Pipeline}{equation.3.1}{}}
+\newlabel{eq:ldm_loss}{{2}{4}{Diffusion Pipeline}{equation.3.2}{}}
+\newlabel{eq:cfg}{{3}{4}{Diffusion Pipeline}{equation.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Speech Synthesis Module}{4}{subsection.3.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces GIAF evaluation metrics and their hierarchical relationship. POAS provides sample-level semantic alignment; CRI aggregates intra-domain consistency; and CDTS summarises global cross-domain transfer performance. The three metrics together form a complete diagnostic profile for intent-aware evaluation of text-to-audio systems.\relax }}{4}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:giaf}{{4}{4}{GIAF evaluation metrics and their hierarchical relationship. POAS provides sample-level semantic alignment; CRI aggregates intra-domain consistency; and CDTS summarises global cross-domain transfer performance. The three metrics together form a complete diagnostic profile for intent-aware evaluation of text-to-audio systems.\relax }{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}GIAF Evaluation Framework}{5}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:giaf}{{\mbox  {III-D}}{5}{GIAF Evaluation Framework}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}1}POAS --- Prompt-to-Audio Similarity}{5}{subsubsection.3.4.1}\protected@file@percent }
+\newlabel{eq:poas_clap}{{4}{5}{POAS --- Prompt-to-Audio Similarity}{equation.3.4}{}}
+\newlabel{eq:poas_speech}{{5}{5}{POAS --- Prompt-to-Audio Similarity}{equation.3.5}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}2}CRI --- Cross-domain Robustness Index}{5}{subsubsection.3.4.2}\protected@file@percent }
+\newlabel{eq:cri}{{6}{5}{CRI --- Cross-domain Robustness Index}{equation.3.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces RAG Knowledge Base: Keyword-to-Descriptor Mapping\relax }}{5}{table.caption.6}\protected@file@percent }
+\newlabel{tab:rag_kb}{{I}{5}{RAG Knowledge Base: Keyword-to-Descriptor Mapping\relax }{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}3}CDTS --- Cross-domain Transfer Score}{5}{subsubsection.3.4.3}\protected@file@percent }
+\newlabel{eq:cdts}{{7}{5}{CDTS --- Cross-domain Transfer Score}{equation.3.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}RAG Conditioning Module}{5}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:rag}{{\mbox  {III-E}}{5}{RAG Conditioning Module}{subsection.3.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces RAG prompt enhancement workflow. The keyword matcher scans the input prompt against the local knowledge base (7 acoustic concept entries) and retrieves matching descriptor phrases. The identified descriptors are appended to the original prompt using the separator ``\texttt  {| Features:}'', producing an enriched conditioning string. For example, a prompt containing ``piano'' retrieves production-quality parameters such as ``grand piano, sustained pedal, classical reverb, high fidelity audio''.\relax }}{6}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:rag}{{5}{6}{RAG prompt enhancement workflow. The keyword matcher scans the input prompt against the local knowledge base (7 acoustic concept entries) and retrieves matching descriptor phrases. The identified descriptors are appended to the original prompt using the separator ``\texttt {| Features:}'', producing an enriched conditioning string. For example, a prompt containing ``piano'' retrieves production-quality parameters such as ``grand piano, sustained pedal, classical reverb, high fidelity audio''.\relax }{figure.caption.5}{}}
+\newlabel{eq:rag_concat}{{8}{6}{RAG Conditioning Module}{equation.3.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Setup}{6}{section.4}\protected@file@percent }
+\newlabel{sec:exp}{{IV}{6}{Experimental Setup}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Datasets and Prompt Sets}{6}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}Evaluation Protocol}{6}{subsection.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Evaluation Prompt Corpus Summary\relax }}{7}{table.caption.7}\protected@file@percent }
+\newlabel{tab:dataset}{{II}{7}{Evaluation Prompt Corpus Summary\relax }{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}Hardware and Hyperparameters}{7}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-D}}Cross-Domain Evaluation and Transfer Analysis}{7}{subsection.4.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Hyperparameters for Generation and Evaluation\relax }}{7}{table.caption.8}\protected@file@percent }
+\newlabel{tab:hyperparams}{{III}{7}{Hyperparameters for Generation and Evaluation\relax }{table.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Quantitative GIAF Results Across Domains (30 Prompts)\relax }}{7}{table.caption.10}\protected@file@percent }
+\newlabel{tab:main_results}{{IV}{7}{Quantitative GIAF Results Across Domains (30 Prompts)\relax }{table.caption.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {V}Results and Discussion}{7}{section.5}\protected@file@percent }
+\newlabel{sec:results}{{V}{7}{Results and Discussion}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}Domain-Level Intent Alignment}{7}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Cross-Domain Behaviour}{7}{subsection.5.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Cross-domain evaluation results for all 30 prompts. \textit  {Left}: Per-domain mean POAS scores (music: 0.4082, SFX: 0.3072, speech: 0.2846) with error bars representing one standard deviation. \textit  {Right}: Global aggregate GIAF metrics---CRI = 0.1360 (mean intra-domain standard deviation) and CDTS = 0.3333 (global mean POAS)---quantifying overall alignment quality and cross-domain robustness. Music consistently achieves the highest intent alignment, reflecting the strength of CLAP pretraining on musical content.\relax }}{8}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:results_detail}{{6}{8}{Cross-domain evaluation results for all 30 prompts. \textit {Left}: Per-domain mean POAS scores (music: 0.4082, SFX: 0.3072, speech: 0.2846) with error bars representing one standard deviation. \textit {Right}: Global aggregate GIAF metrics---CRI = 0.1360 (mean intra-domain standard deviation) and CDTS = 0.3333 (global mean POAS)---quantifying overall alignment quality and cross-domain robustness. Music consistently achieves the highest intent alignment, reflecting the strength of CLAP pretraining on musical content.\relax }{figure.caption.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Per-Sample POAS Scores for All 30 Evaluated Prompts\relax }}{8}{table.caption.11}\protected@file@percent }
+\newlabel{tab:per_sample}{{V}{8}{Per-Sample POAS Scores for All 30 Evaluated Prompts\relax }{table.caption.11}{}}
+\citation{liu2024audioldm2}
+\citation{elizalde2023clap}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}RAG Conditioning Effect}{9}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Comparison with Prior Single-Domain Results}{9}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Ablation Study}{9}{section.6}\protected@file@percent }
+\newlabel{sec:ablation}{{VI}{9}{Ablation Study}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Effect of RAG Conditioning on POAS}{9}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Metric Sensitivity and Diagnostic Utility}{9}{subsection.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}CLAP Checkpoint Sensitivity}{9}{subsection.6.3}\protected@file@percent }
+\bibcite{liu2023audioldm}{1}
+\bibcite{liu2024audioldm2}{2}
+\bibcite{kreuk2022audiogen}{3}
+\bibcite{huang2023makeanaudio}{4}
+\bibcite{xue2024auffusion}{5}
+\bibcite{elizalde2023clap}{6}
+\bibcite{wu2023largescale}{7}
+\bibcite{lewis2020rag}{8}
+\bibcite{blattmann2022retrieval}{9}
+\bibcite{sheffer2023hear}{10}
+\bibcite{ho2020ddpm}{11}
+\bibcite{song2021scorebased}{12}
+\bibcite{rombach2022ldm}{13}
+\bibcite{ho2022cfg}{14}
+\bibcite{song2021ddim}{15}
+\bibcite{kong2020hifigan}{16}
+\bibcite{ao2021speecht5}{17}
+\bibcite{panayotov2015librispeech}{18}
+\bibcite{veaux2017cstr}{19}
+\bibcite{kilgour2018fad}{20}
+\bibcite{graves2006ctc}{21}
+\bibcite{brown2020gpt3}{22}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion and Future Work}{10}{section.7}\protected@file@percent }
+\newlabel{sec:conclusion}{{VII}{10}{Conclusion and Future Work}{section.7}{}}
+\@writefile{toc}{\contentsline {section}{References}{10}{section*.12}\protected@file@percent }
+\gdef \@abspage@last{11}
