@@ -1,6 +1,6 @@
 <table>
   <tr>
-    <th>File Name</th>
+    <th>File</th>
     <th>Ambience</th>
   </tr>
   <tr>
