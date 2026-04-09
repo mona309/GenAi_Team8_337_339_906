@@ -39,9 +39,12 @@ class PromptEnhancer:
         if domain == "music":
             return f"High quality cinematic music, {prompt}, rich stereo mix"
         elif domain == "speech":
-            return f"Natural human speech, studio voice recording, {prompt}"
+            return f"{prompt}"
         elif domain == "sfx":
             return f"Realistic sound effect, clean isolated audio, {prompt}"
+        elif domain == "ambient":
+            return f"Immersive ambient soundscape, wide stereo atmosphere, natural environmental depth, realistic background ambience, {prompt}"
+
 
 if __name__ == "__main__":
     enhancer = PromptEnhancer()

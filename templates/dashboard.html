@@ -11,6 +11,7 @@
     label { font-size: 13px; color: #555; display: block; margin-bottom: 6px; }
     textarea, select, input[type=number] { width: 100%; font-size: 14px; font-family: inherit; color: #1a1a18; background: #f5f5f3; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 10px 12px; resize: vertical; }
     textarea:focus, select:focus, input[type=number]:focus { outline: none; border-color: rgba(0,0,0,0.4); }
+    select:disabled, input[type=number]:disabled { cursor: not-allowed; background: #ececea; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 14px; font-family: inherit; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: transparent; color: #1a1a18; cursor: pointer; transition: background 0.15s; }
     .btn:hover { background: #f5f5f3; }
@@ -50,6 +51,28 @@
     .section-title { font-size: 13px; font-weight: 500; color: #1a1a18; margin-bottom: 12px; }
     .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     h1 { font-size: 18px; font-weight: 500; margin-bottom: 1.25rem; color: #1a1a18; }
+
+    /* ── Progress bar ── */
+    #progress-wrap { display: none; margin-top: 14px; }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .progress-phase { font-size: 12px; color: #555; }
+    .progress-pct   { font-size: 12px; font-weight: 500; color: #185FA5; }
+    .progress-track { width: 100%; height: 7px; background: rgba(0,0,0,0.08); border-radius: 4px; overflow: hidden; }
+    .progress-fill  {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #378add, #185FA5);
+      border-radius: 4px;
+      transition: width 0.35s ease;
+    }
+    .progress-steps { display: flex; margin-top: 8px; }
+    .progress-step  {
+      flex: 1; font-size: 10px; text-align: center;
+      padding: 4px 2px; color: #bbb;
+      border-top: 2px solid rgba(0,0,0,0.08);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .progress-step.active { color: #185FA5; border-color: #185FA5; font-weight: 500; }
+    .progress-step.done   { color: #0f6e56; border-color: #0f6e56; }
   </style>
 </head>
 <body>
@@ -68,6 +91,13 @@
           <option value="music">Music</option>
           <option value="speech">Speech</option>
           <option value="ambient">Ambient</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="gender" class="form-label">Voice</label>
+        <select id="gender" class="form-select">
+          <option value="female" selected>Female</option>
+          <option value="male">Male</option>
         </select>
       </div>
       <div>
@@ -90,6 +120,23 @@
     <div style="margin-top:14px; display:flex; gap:8px;">
       <button class="btn primary" id="generate-btn">Generate ↗</button>
       <button class="btn" id="clear-btn">Clear results</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div id="progress-wrap">
+      <div class="progress-header">
+        <span class="progress-phase" id="progress-phase">Initialising…</span>
+        <span class="progress-pct"  id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-steps">
+        <div class="progress-step" id="ps-rag">RAG enhance</div>
+        <div class="progress-step" id="ps-gen">Model inference</div>
+        <div class="progress-step" id="ps-eval">CLAP eval</div>
+        <div class="progress-step" id="ps-save">Save</div>
+      </div>
     </div>
   </div>
 
@@ -145,6 +192,26 @@
     const statusBadge = document.getElementById("status-badge");
     const generateBtn = document.getElementById("generate-btn");
 
+    // ── Domain-aware field locking ────────────────────────────────────────────
+    const domainSelect  = document.getElementById("domain");
+    const genderSelect  = document.getElementById("gender");
+    const audioLenInput = document.getElementById("audio_len");
+
+    function applyDomainRules() {
+      const isSpeech = domainSelect.value === "speech";
+      // Voice: only relevant for speech
+      genderSelect.disabled = !isSpeech;
+      genderSelect.style.opacity = isSpeech ? "1" : "0.4";
+      genderSelect.title = isSpeech ? "" : "Voice selection is only used for Speech domain";
+      // Audio length: fixed for speech (SpeechT5 controls its own length)
+      audioLenInput.disabled = isSpeech;
+      audioLenInput.style.opacity = isSpeech ? "0.4" : "1";
+      audioLenInput.title = isSpeech ? "Audio length is determined by the text for Speech" : "";
+    }
+
+    domainSelect.addEventListener("change", applyDomainRules);
+    applyDomainRules(); // run once on load
+
     // ── Controls ──────────────────────────────────────────────────────────────
     ragToggle.addEventListener("click", () => {
       ragEnabled = !ragEnabled;
@@ -172,6 +239,102 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
+    // ── Progress bar ──────────────────────────────────────────────────────────
+    const progressWrap  = document.getElementById("progress-wrap");
+    const progressFill  = document.getElementById("progress-fill");
+    const progressPhase = document.getElementById("progress-phase");
+    const progressPct   = document.getElementById("progress-pct");
+    const phaseEls      = {
+      rag:  document.getElementById("ps-rag"),
+      gen:  document.getElementById("ps-gen"),
+      eval: document.getElementById("ps-eval"),
+      save: document.getElementById("ps-save"),
+    };
+
+    // Phases: [key, label, end% of total]
+    // Generation dominates; its share scales with inference steps.
+    function buildPhases(useRag, steps) {
+      // Base durations in "weight units" — gen scales with steps
+      const ragW  = useRag ? 8 : 0;
+      const genW  = 20 + steps * 0.55;   // ~86 at 120 steps, ~185 at 300 steps
+      const evalW = 10;
+      const saveW = 4;
+      const total = ragW + genW + evalW + saveW;
+
+      const phases = [];
+      let cum = 0;
+      if (useRag) {
+        cum += ragW;
+        phases.push({ key: "rag",  label: "Enhancing prompt with RAG…",  endPct: cum / total * 100 });
+      }
+      cum += genW;
+      phases.push({ key: "gen",  label: "Running model inference…",      endPct: cum / total * 100 });
+      cum += evalW;
+      phases.push({ key: "eval", label: "Evaluating with CLAP…",         endPct: cum / total * 100 });
+      cum += saveW;
+      phases.push({ key: "save", label: "Saving audio file…",            endPct: 100 });
+      return phases;
+    }
+
+    let progressTimer = null;
+
+    function startProgress(useRag, steps) {
+      progressWrap.style.display = "block";
+      Object.values(phaseEls).forEach(el => el.classList.remove("active", "done"));
+      if (!useRag) phaseEls.rag.style.opacity = "0.3";
+      else         phaseEls.rag.style.opacity = "1";
+
+      setProgress(0, "Initialising…");
+
+      const phases  = buildPhases(useRag, steps);
+      // Total estimated wall-clock ms. SpeechT5 is faster; AudioLDM2 ~1s/step on GPU.
+      const totalMs = 3000 + steps * 900;
+      let   startTime = performance.now();
+
+      progressTimer = setInterval(() => {
+        const elapsed = performance.now() - startTime;
+        const rawPct  = Math.min((elapsed / totalMs) * 100, 99); // cap at 99 until done
+
+        // Find active phase
+        const phase = phases.find(p => rawPct <= p.endPct) || phases[phases.length - 1];
+        const prevEnd = (() => {
+          const idx = phases.indexOf(phase);
+          return idx === 0 ? 0 : phases[idx - 1].endPct;
+        })();
+
+        // Mark steps
+        phases.forEach(p => {
+          const el = phaseEls[p.key];
+          if (!el) return;
+          if (rawPct > p.endPct)        { el.classList.add("done");   el.classList.remove("active"); }
+          else if (p.key === phase.key) { el.classList.add("active"); el.classList.remove("done");  }
+          else                          { el.classList.remove("active", "done"); }
+        });
+
+        setProgress(rawPct, phase.label);
+      }, 150);
+    }
+
+    function finishProgress() {
+      clearInterval(progressTimer);
+      Object.values(phaseEls).forEach(el => { el.classList.remove("active"); el.classList.add("done"); });
+      setProgress(100, "Done ✓");
+      setTimeout(() => { progressWrap.style.display = "none"; }, 1800);
+    }
+
+    function resetProgress() {
+      clearInterval(progressTimer);
+      progressWrap.style.display = "none";
+      setProgress(0, "");
+      Object.values(phaseEls).forEach(el => el.classList.remove("active", "done"));
+    }
+
+    function setProgress(pct, label) {
+      progressFill.style.width  = pct + "%";
+      progressPct.textContent   = Math.round(pct) + "%";
+      progressPhase.textContent = label;
+    }
+
     // ── Generate ──────────────────────────────────────────────────────────────
     generateBtn.addEventListener("click", async () => {
       const prompt   = document.getElementById("prompt").value.trim();
@@ -179,25 +342,32 @@
       const audioLen = parseFloat(document.getElementById("audio_len").value);
       const steps    = parseInt(stepsInput.value);
 
-      if (!prompt) { appendLog("⚠ Please enter a prompt.", "err"); return; }
+      if (!prompt) {
+        appendLog("⚠ Please enter a prompt.", "err");
+        return;
+      }
 
       generateBtn.disabled = true;
       statusBadge.textContent = "running…";
       statusBadge.style.color = "#185FA5";
+      startProgress(ragEnabled, steps);
 
       try {
-        appendLog(`Starting: "${prompt.slice(0, 60)}${prompt.length > 60 ? "…" : ""}"`);
+        appendLog(`Starting: "${prompt}"`);
 
-        const res = await fetch(`${API_BASE}/generate`, {
+        const payload = {
+          prompt,
+          domain,
+          gender: document.getElementById("gender").value,
+          use_rag: ragEnabled,
+          num_inference_steps: steps,
+          audio_length_in_s: audioLen
+        };
+
+        const res = await fetch("/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt,
-            domain,
-            use_rag: ragEnabled,
-            num_inference_steps: steps,
-            audio_length_in_s: audioLen,
-          }),
+          body: JSON.stringify(payload)
         });
 
         if (!res.ok) {
@@ -206,6 +376,7 @@
         }
 
         const record = await res.json();
+        finishProgress();
 
         if (record.rag_used) appendLog("RAG enhanced prompt ready");
         appendLog(`CLAP evaluation: POAS = ${record.poas_score}`, "ok");
@@ -224,12 +395,12 @@
 
         renderResults();
 
-        // Fetch authoritative metrics from server
         const mRes = await fetch(`${API_BASE}/metrics`);
         const metrics = await mRes.json();
         updateMetricsDisplay(metrics);
 
       } catch (err) {
+        resetProgress();
         appendLog(`Error: ${err.message}`, "err");
       } finally {
         generateBtn.disabled = false;
@@ -266,7 +437,7 @@
           <td style="font-size:11px;color:#aaa">${r.audioLen}s / ${r.steps} steps</td>
           <td>
             <audio controls preload="metadata" style="width:220px;">
-              <source src="/outputs/audio/${r.audioFile.split('/').pop()}" type="audio/wav">
+              <source src="/audio/${r.audioFile.split('/').pop()}" type="audio/wav">
               Your browser does not support audio playback.
             </audio>
           </td>
