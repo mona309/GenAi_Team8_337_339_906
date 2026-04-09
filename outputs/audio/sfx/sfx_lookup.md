@@ -20,7 +20,7 @@
     <td>A robotic drone powering up, motors spinning, then a high-pitched stabilisation beep.</td>
   </tr>
   <tr>
-    <td>#9b9c7a70</td>
+    <td>#9d9c7a70</td>
     <td>A heavy metal door slamming shut with a long reverberant echo.</td>
   </tr>
   <tr>
