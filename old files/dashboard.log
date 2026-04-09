@@ -1,6 +1,14 @@
 `torch_dtype` is deprecated! Use `dtype` instead!
 Loading AudioLDM2 on cpu...
-Loading pipeline components...:   0%|          | 0/11 [00:00<?, ?it/s]Loading pipeline components...:   9%|▉         | 1/11 [00:00<00:03,  3.06it/s]Loading pipeline components...:  27%|██▋       | 3/11 [00:00<00:01,  7.30it/s]Loading pipeline components...:  36%|███▋      | 4/11 [00:00<00:01,  5.33it/s]Loading pipeline components...:  45%|████▌     | 5/11 [00:01<00:01,  3.78it/s]Loading pipeline components...:  91%|█████████ | 10/11 [00:01<00:00,  6.12it/s]Loading pipeline components...: 100%|██████████| 11/11 [00:01<00:00,  6.14it/s]Loading pipeline components...: 100%|██████████| 11/11 [00:01<00:00,  5.68it/s]
+
+Loading pipeline components...:   0%|          | 0/11 [00:00<?, ?it/s]
+Loading pipeline components...:   9%|▉         | 1/11 [00:00<00:03,  3.06it/s]
+Loading pipeline components...:  27%|██▋       | 3/11 [00:00<00:01,  7.30it/s]
+Loading pipeline components...:  36%|███▋      | 4/11 [00:00<00:01,  5.33it/s]
+Loading pipeline components...:  45%|████▌     | 5/11 [00:01<00:01,  3.78it/s]
+Loading pipeline components...:  91%|█████████ | 10/11 [00:01<00:00,  6.12it/s]
+Loading pipeline components...: 100%|██████████| 11/11 [00:01<00:00,  6.14it/s]
+Loading pipeline components...: 100%|██████████| 11/11 [00:01<00:00,  5.68it/s]
 /home/mona/.local/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
   return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
 Some weights of RobertaModel were not initialized from the model checkpoint at roberta-base and are newly initialized: ['pooler.dense.bias', 'pooler.dense.weight']
@@ -415,7 +423,29 @@ INFO:     127.0.0.1:60734 - "GET / HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60734 - "GET /metrics HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60736 - "GET /favicon.ico HTTP/1.1" 404 Not Found
 Generating audio for prompt: 'a girl crying for milk | Features: high quality, clear audio, realistic soundscape, lossless format'
-  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:03<01:10,  3.71s/it] 10%|█         | 2/20 [00:05<00:48,  2.68s/it] 15%|█▌        | 3/20 [00:08<00:44,  2.60s/it] 20%|██        | 4/20 [00:10<00:41,  2.58s/it] 25%|██▌       | 5/20 [00:13<00:39,  2.63s/it] 30%|███       | 6/20 [00:15<00:35,  2.54s/it] 35%|███▌      | 7/20 [00:18<00:32,  2.52s/it] 40%|████      | 8/20 [00:20<00:29,  2.47s/it] 45%|████▌     | 9/20 [00:24<00:32,  2.92s/it] 50%|█████     | 10/20 [00:28<00:30,  3.09s/it] 55%|█████▌    | 11/20 [00:35<00:40,  4.50s/it] 60%|██████    | 12/20 [00:40<00:37,  4.69s/it] 65%|██████▌   | 13/20 [00:51<00:45,  6.50s/it] 70%|███████   | 14/20 [01:01<00:45,  7.54s/it] 75%|███████▌  | 15/20 [01:06<00:34,  6.86s/it] 80%|████████  | 16/20 [01:15<00:29,  7.41s/it] 85%|████████▌ | 17/20 [01:20<00:19,  6.56s/it] 90%|█████████ | 18/20 [01:23<00:11,  5.72s/it] 95%|█████████▌| 19/20 [01:29<00:05,  5.64s/it]100%|██████████| 20/20 [01:33<00:00,  5.21s/it]100%|██████████| 20/20 [01:33<00:00,  4.67s/it]
+
+  0%|          | 0/20 [00:00<?, ?it/s]
+  5%|▌         | 1/20 [00:03<01:10,  3.71s/it]
+ 10%|█         | 2/20 [00:05<00:48,  2.68s/it]
+ 15%|█▌        | 3/20 [00:08<00:44,  2.60s/it]
+ 20%|██        | 4/20 [00:10<00:41,  2.58s/it]
+ 25%|██▌       | 5/20 [00:13<00:39,  2.63s/it]
+ 30%|███       | 6/20 [00:15<00:35,  2.54s/it]
+ 35%|███▌      | 7/20 [00:18<00:32,  2.52s/it]
+ 40%|████      | 8/20 [00:20<00:29,  2.47s/it]
+ 45%|████▌     | 9/20 [00:24<00:32,  2.92s/it]
+ 50%|█████     | 10/20 [00:28<00:30,  3.09s/it]
+ 55%|█████▌    | 11/20 [00:35<00:40,  4.50s/it]
+ 60%|██████    | 12/20 [00:40<00:37,  4.69s/it]
+ 65%|██████▌   | 13/20 [00:51<00:45,  6.50s/it]
+ 70%|███████   | 14/20 [01:01<00:45,  7.54s/it]
+ 75%|███████▌  | 15/20 [01:06<00:34,  6.86s/it]
+ 80%|████████  | 16/20 [01:15<00:29,  7.41s/it]
+ 85%|████████▌ | 17/20 [01:20<00:19,  6.56s/it]
+ 90%|█████████ | 18/20 [01:23<00:11,  5.72s/it]
+ 95%|█████████▌| 19/20 [01:29<00:05,  5.64s/it]
+100%|██████████| 20/20 [01:33<00:00,  5.21s/it]
+100%|██████████| 20/20 [01:33<00:00,  4.67s/it]
 Saved: outputs/audio/9ef3965e.wav
 INFO:     127.0.0.1:49548 - "POST /generate HTTP/1.1" 200 OK
 INFO:     Shutting down
