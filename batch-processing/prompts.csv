@@ -1,0 +1,29 @@
+prompt,domain,gender,emotion,num_inference_steps,audio_length_in_s
+A melancholic jazz piano trio in a dimly lit club,music,female,neutral,150,8.0
+Energetic techno loop with a driving 808 kick,music,female,neutral,200,8.0
+Ambient synthesizer drone slowly evolving,music,female,neutral,180,8.0
+A cheerful acoustic guitar folk song in an open field,music,female,neutral,160,8.0
+A dramatic orchestral swell building to a climax,music,female,neutral,200,8.0
+Soft piano melody over gentle rain in a quiet room,music,female,neutral,150,8.0
+A funky bass guitar groove with light percussion,music,female,neutral,140,8.0
+A heavy wooden door slamming shut in an empty hallway,sfx,female,neutral,120,6.0
+A large explosion with debris and distant echo,sfx,female,neutral,200,7.0
+Footsteps walking on gravel at a steady pace,sfx,female,neutral,100,6.0
+A clock ticking quietly in a silent room,sfx,female,neutral,80,5.0
+An engine revving and then fading into the distance,sfx,female,neutral,120,6.0
+Thunder cracking loudly followed by heavy rain,sfx,female,neutral,150,7.0
+Keys jingling and a door handle clicking open,sfx,female,neutral,80,5.0
+A dog barking repeatedly in an outdoor yard,sfx,female,neutral,100,6.0
+A quiet forest at dawn with birds and a distant stream,ambient,female,neutral,160,8.0
+Heavy rain falling on a rooftop during a thunderstorm,ambient,female,neutral,180,8.0
+A busy city intersection with traffic and pedestrians,ambient,female,neutral,140,8.0
+Ocean waves rolling onto a sandy beach on a calm day,ambient,female,neutral,160,8.0
+A cosy coffee shop with soft chatter and an espresso machine,ambient,female,neutral,140,8.0
+Wind blowing through tall trees in an open countryside,ambient,female,neutral,150,8.0
+A crackling fireplace in a quiet living room at night,ambient,female,neutral,130,8.0
+Welcome to the annual science fair. Please find your seats.,speech,female,neutral,80,8.0
+I can't believe what just happened. This is incredible.,speech,female,excited,80,8.0
+The package has been delivered to your front door.,speech,male,calm,80,8.0
+Please press one to speak to an operator or two to leave a message.,speech,female,neutral,80,8.0
+The train now arriving at platform four is the delayed service to Manchester.,speech,male,neutral,80,8.0
+I'm so sorry to hear that. Are you doing okay?,speech,female,sad,80,8.0
