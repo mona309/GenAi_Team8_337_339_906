@@ -12,7 +12,8 @@
     textarea, select, input[type=number] { width: 100%; font-size: 14px; font-family: inherit; color: #1a1a18; background: #f5f5f3; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 10px 12px; resize: vertical; }
     textarea:focus, select:focus, input[type=number]:focus { outline: none; border-color: rgba(0,0,0,0.4); }
     select:disabled, input[type=number]:disabled { cursor: not-allowed; background: #ececea; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 14px; font-family: inherit; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: transparent; color: #1a1a18; cursor: pointer; transition: background 0.15s; }
     .btn:hover { background: #f5f5f3; }
     .btn:active { transform: scale(0.98); }
@@ -73,6 +74,19 @@
     }
     .progress-step.active { color: #185FA5; border-color: #185FA5; font-weight: 500; }
     .progress-step.done   { color: #0f6e56; border-color: #0f6e56; }
+
+    /* ── Analytics charts ── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .chart-card  { background: #f5f5f3; border-radius: 10px; padding: 1rem; }
+    .chart-card-title { font-size: 12px; color: #888; margin-bottom: 10px; }
+    .chart-empty { font-size: 12px; color: #bbb; text-align: center; padding: 2rem 0; }
+    .cdts-bar-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .cdts-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .cdts-label { width: 64px; flex-shrink: 0; }
+    .cdts-track { flex: 1; height: 8px; background: rgba(0,0,0,0.07); border-radius: 4px; position: relative; }
+    .cdts-fill-pos { height: 8px; background: #378add; border-radius: 0 4px 4px 0; position: absolute; left: 50%; top: 0; }
+    .cdts-fill-neg { height: 8px; background: #D85A30; border-radius: 4px 0 0 4px; position: absolute; right: 50%; top: 0; }
+    .cdts-val { width: 52px; text-align: right; color: #555; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -93,9 +107,9 @@
           <option value="ambient">Ambient</option>
         </select>
       </div>
-      <div class="mb-3">
-        <label for="gender" class="form-label">Voice</label>
-        <select id="gender" class="form-select">
+      <div>
+        <label style="margin-top:12px">Voice</label>
+        <select id="gender">
           <option value="female" selected>Female</option>
           <option value="male">Male</option>
         </select>
@@ -103,6 +117,20 @@
       <div>
         <label style="margin-top:12px">Audio length (s)</label>
         <input type="number" id="audio_len" value="8" min="1" max="30" step="0.5">
+      </div>
+    </div>
+    <div class="row-4" style="margin-top:12px">
+      <div>
+        <label>Emotion</label>
+        <select id="emotion">
+          <option value="neutral" selected>Neutral</option>
+          <option value="happy">Happy</option>
+          <option value="sad">Sad</option>
+          <option value="angry">Angry</option>
+          <option value="calm">Calm</option>
+          <option value="excited">Excited</option>
+          <option value="fearful">Fearful</option>
+        </select>
       </div>
     </div>
     <div style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
@@ -173,15 +201,47 @@
     </div>
   </div>
 
+  <!-- ── Analytics (persisted across sessions via CSV) ── -->
+  <div class="section">
+    <div class="header">
+      <div class="section-title" style="margin-bottom:0">Analytics</div>
+      <span style="font-size:11px;color:#bbb;">results_table.csv · domain_transfer.csv</span>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Mean POAS by domain</div>
+        <div style="position:relative;height:180px;">
+          <canvas id="chart-domain-poas" role="img" aria-label="Bar chart of mean POAS per domain"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Cross-domain transfer score (CDTS)</div>
+        <div class="cdts-bar-wrap" id="cdts-wrap">
+          <div class="chart-empty">No data yet</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">POAS per run</div>
+        <div style="position:relative;height:180px;">
+          <canvas id="chart-scatter" role="img" aria-label="Scatter plot of POAS scores per run coloured by domain"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Runs per domain</div>
+        <div style="position:relative;height:180px;">
+          <canvas id="chart-counts" role="img" aria-label="Bar chart of generation count per domain"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script>
-    // ── Config ────────────────────────────────────────────────────────────────
-    // Since this file is served by Flask, API calls go to the same origin.
-    // Change this if running the UI separately (e.g. "http://localhost:5000").
     const API_BASE = "";
 
     // ── State ─────────────────────────────────────────────────────────────────
     let ragEnabled = true;
-    let results = [];
+    let results    = [];
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
     const ragToggle   = document.getElementById("rag-toggle");
@@ -195,22 +255,23 @@
     // ── Domain-aware field locking ────────────────────────────────────────────
     const domainSelect  = document.getElementById("domain");
     const genderSelect  = document.getElementById("gender");
+    const emotionSelect = document.getElementById("emotion");
     const audioLenInput = document.getElementById("audio_len");
 
     function applyDomainRules() {
       const isSpeech = domainSelect.value === "speech";
-      // Voice: only relevant for speech
-      genderSelect.disabled = !isSpeech;
-      genderSelect.style.opacity = isSpeech ? "1" : "0.4";
-      genderSelect.title = isSpeech ? "" : "Voice selection is only used for Speech domain";
-      // Audio length: fixed for speech (SpeechT5 controls its own length)
-      audioLenInput.disabled = isSpeech;
+      genderSelect.disabled       = !isSpeech;
+      genderSelect.style.opacity  = isSpeech ? "1" : "0.4";
+      genderSelect.title          = isSpeech ? "" : "Voice selection is only used for Speech domain";
+      emotionSelect.disabled      = !isSpeech;
+      emotionSelect.style.opacity = isSpeech ? "1" : "0.4";
+      emotionSelect.title         = isSpeech ? "" : "Emotion is only used for Speech domain";
+      audioLenInput.disabled      = isSpeech;
       audioLenInput.style.opacity = isSpeech ? "0.4" : "1";
-      audioLenInput.title = isSpeech ? "Audio length is determined by the text for Speech" : "";
+      audioLenInput.title         = isSpeech ? "Audio length is determined by the text for Speech" : "";
     }
-
     domainSelect.addEventListener("change", applyDomainRules);
-    applyDomainRules(); // run once on load
+    applyDomainRules();
 
     // ── Controls ──────────────────────────────────────────────────────────────
     ragToggle.addEventListener("click", () => {
@@ -227,12 +288,13 @@
       updateMetricsDisplay({ avg_poas: null, cri_variance: null, run_count: 0 });
       logEl.innerHTML = '<span style="color:#aaa">Cleared. Waiting for next generation…</span>';
       statusBadge.textContent = "idle";
+      refreshCharts();
     });
 
     // ── Logging ───────────────────────────────────────────────────────────────
     function appendLog(msg, type = "") {
       const el = document.createElement("div");
-      el.className = type;
+      el.className  = type;
       el.textContent = msg;
       if (logEl.querySelector("span")) logEl.innerHTML = "";
       logEl.appendChild(el);
@@ -244,35 +306,25 @@
     const progressFill  = document.getElementById("progress-fill");
     const progressPhase = document.getElementById("progress-phase");
     const progressPct   = document.getElementById("progress-pct");
-    const phaseEls      = {
+    const phaseEls = {
       rag:  document.getElementById("ps-rag"),
       gen:  document.getElementById("ps-gen"),
       eval: document.getElementById("ps-eval"),
       save: document.getElementById("ps-save"),
     };
 
-    // Phases: [key, label, end% of total]
-    // Generation dominates; its share scales with inference steps.
     function buildPhases(useRag, steps) {
-      // Base durations in "weight units" — gen scales with steps
       const ragW  = useRag ? 8 : 0;
-      const genW  = 20 + steps * 0.55;   // ~86 at 120 steps, ~185 at 300 steps
+      const genW  = 20 + steps * 0.55;
       const evalW = 10;
       const saveW = 4;
       const total = ragW + genW + evalW + saveW;
-
       const phases = [];
       let cum = 0;
-      if (useRag) {
-        cum += ragW;
-        phases.push({ key: "rag",  label: "Enhancing prompt with RAG…",  endPct: cum / total * 100 });
-      }
-      cum += genW;
-      phases.push({ key: "gen",  label: "Running model inference…",      endPct: cum / total * 100 });
-      cum += evalW;
-      phases.push({ key: "eval", label: "Evaluating with CLAP…",         endPct: cum / total * 100 });
-      cum += saveW;
-      phases.push({ key: "save", label: "Saving audio file…",            endPct: 100 });
+      if (useRag) { cum += ragW; phases.push({ key:"rag",  label:"Enhancing prompt with RAG…", endPct: cum/total*100 }); }
+      cum += genW;  phases.push({ key:"gen",  label:"Running model inference…",    endPct: cum/total*100 });
+      cum += evalW; phases.push({ key:"eval", label:"Evaluating with CLAP…",       endPct: cum/total*100 });
+      cum += saveW; phases.push({ key:"save", label:"Saving audio file…",          endPct: 100 });
       return phases;
     }
 
@@ -280,37 +332,22 @@
 
     function startProgress(useRag, steps) {
       progressWrap.style.display = "block";
-      Object.values(phaseEls).forEach(el => el.classList.remove("active", "done"));
-      if (!useRag) phaseEls.rag.style.opacity = "0.3";
-      else         phaseEls.rag.style.opacity = "1";
-
+      Object.values(phaseEls).forEach(el => el.classList.remove("active","done"));
+      phaseEls.rag.style.opacity = useRag ? "1" : "0.3";
       setProgress(0, "Initialising…");
-
-      const phases  = buildPhases(useRag, steps);
-      // Total estimated wall-clock ms. SpeechT5 is faster; AudioLDM2 ~1s/step on GPU.
-      const totalMs = 3000 + steps * 900;
-      let   startTime = performance.now();
-
+      const phases   = buildPhases(useRag, steps);
+      const totalMs  = 3000 + steps * 900;
+      const startTime = performance.now();
       progressTimer = setInterval(() => {
         const elapsed = performance.now() - startTime;
-        const rawPct  = Math.min((elapsed / totalMs) * 100, 99); // cap at 99 until done
-
-        // Find active phase
-        const phase = phases.find(p => rawPct <= p.endPct) || phases[phases.length - 1];
-        const prevEnd = (() => {
-          const idx = phases.indexOf(phase);
-          return idx === 0 ? 0 : phases[idx - 1].endPct;
-        })();
-
-        // Mark steps
+        const rawPct  = Math.min((elapsed / totalMs) * 100, 99);
+        const phase   = phases.find(p => rawPct <= p.endPct) || phases[phases.length-1];
         phases.forEach(p => {
-          const el = phaseEls[p.key];
-          if (!el) return;
-          if (rawPct > p.endPct)        { el.classList.add("done");   el.classList.remove("active"); }
-          else if (p.key === phase.key) { el.classList.add("active"); el.classList.remove("done");  }
-          else                          { el.classList.remove("active", "done"); }
+          const el = phaseEls[p.key]; if (!el) return;
+          if      (rawPct > p.endPct)    { el.classList.add("done");   el.classList.remove("active"); }
+          else if (p.key === phase.key)  { el.classList.add("active"); el.classList.remove("done");  }
+          else                           { el.classList.remove("active","done"); }
         });
-
         setProgress(rawPct, phase.label);
       }, 150);
     }
@@ -326,7 +363,7 @@
       clearInterval(progressTimer);
       progressWrap.style.display = "none";
       setProgress(0, "");
-      Object.values(phaseEls).forEach(el => el.classList.remove("active", "done"));
+      Object.values(phaseEls).forEach(el => el.classList.remove("active","done"));
     }
 
     function setProgress(pct, label) {
@@ -342,10 +379,7 @@
       const audioLen = parseFloat(document.getElementById("audio_len").value);
       const steps    = parseInt(stepsInput.value);
 
-      if (!prompt) {
-        appendLog("⚠ Please enter a prompt.", "err");
-        return;
-      }
+      if (!prompt) { appendLog("⚠ Please enter a prompt.", "err"); return; }
 
       generateBtn.disabled = true;
       statusBadge.textContent = "running…";
@@ -354,50 +388,29 @@
 
       try {
         appendLog(`Starting: "${prompt}"`);
-
-        const payload = {
-          prompt,
-          domain,
-          gender: document.getElementById("gender").value,
-          use_rag: ragEnabled,
-          num_inference_steps: steps,
-          audio_length_in_s: audioLen
-        };
-
         const res = await fetch("/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ prompt, domain, gender: document.getElementById("gender").value,
+            emotion: document.getElementById("emotion").value,
+            use_rag: ragEnabled, num_inference_steps: steps, audio_length_in_s: audioLen })
         });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || `HTTP ${res.status}`);
-        }
+        if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.detail || `HTTP ${res.status}`); }
 
         const record = await res.json();
         finishProgress();
-
         if (record.rag_used) appendLog("RAG enhanced prompt ready");
         appendLog(`CLAP evaluation: POAS = ${record.poas_score}`, "ok");
         appendLog(`Saved → ${record.audio_file}`, "ok");
 
-        results.push({
-          id:       record.id,
-          domain:   record.domain,
-          prompt:   record.original_prompt,
-          enhanced: record.enhanced_prompt,
-          poas:     record.poas_score,
-          audioFile: record.audio_file,
-          steps,
-          audioLen,
-        });
+        results.push({ id: record.id, domain: record.domain, prompt: record.original_prompt,
+          enhanced: record.enhanced_prompt, poas: record.poas_score, emotion: record.emotion || "neutral",
+          audioFile: record.audio_file, steps, audioLen });
 
         renderResults();
-
         const mRes = await fetch(`${API_BASE}/metrics`);
-        const metrics = await mRes.json();
-        updateMetricsDisplay(metrics);
+        updateMetricsDisplay(await mRes.json());
+        refreshCharts();
 
       } catch (err) {
         resetProgress();
@@ -411,63 +424,147 @@
 
     // ── Render helpers ────────────────────────────────────────────────────────
     function scoreBar(poas) {
-          const pct = Math.round(poas * 100);
-          return `<div class="score-bar">
-            <div style="flex:1;height:6px;background:rgba(0,0,0,0.08);border-radius:3px;">
-              <div class="score-fill" style="width:${pct}%"></div>
-            </div>
-            <span class="score-text">${poas.toFixed(3)}</span>
-          </div>`;
-        }
+      const pct = Math.round(poas * 100);
+      return `<div class="score-bar">
+        <div style="flex:1;height:6px;background:rgba(0,0,0,0.08);border-radius:3px;">
+          <div class="score-fill" style="width:${pct}%"></div>
+        </div>
+        <span class="score-text">${poas.toFixed(3)}</span>
+      </div>`;
+    }
 
-        function renderResults() {
+    function renderResults() {
       const wrap = document.getElementById("results-wrap");
-
-      if (!results.length) {
-        wrap.innerHTML = '<div class="empty-state">No generations yet. Submit a prompt above.</div>';
-        return;
-      }
-
-      const rows = [...results].reverse().map(r => `
-        <tr>
+      if (!results.length) { wrap.innerHTML = '<div class="empty-state">No generations yet. Submit a prompt above.</div>'; return; }
+      wrap.innerHTML = `<table>
+        <thead><tr><th>#</th><th>Domain</th><th>Prompt</th><th>POAS</th><th>Config</th><th>Generated Audio</th></tr></thead>
+        <tbody>${[...results].reverse().map(r => `<tr>
           <td style="font-size:12px;color:#888">#${r.id}</td>
           <td><span class="badge ${r.domain}">${r.domain}</span></td>
           <td><div class="prompt-preview" title="${r.prompt}">${r.prompt}</div></td>
           <td>${scoreBar(r.poas)}</td>
-          <td style="font-size:11px;color:#aaa">${r.audioLen}s / ${r.steps} steps</td>
-          <td>
-            <audio controls preload="metadata" style="width:220px;">
-              <source src="/audio/${r.audioFile.split('/').pop()}" type="audio/wav">
-              Your browser does not support audio playback.
-            </audio>
-          </td>
-        </tr>
-      `).join("");
-
-      wrap.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Domain</th>
-              <th>Prompt</th>
-              <th>POAS</th>
-              <th>Config</th>
-              <th>Generated Audio</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
+          <td style="font-size:11px;color:#aaa">${r.audioLen}s / ${r.steps} steps${r.domain === 'speech' ? ` / ${r.emotion}` : ''}</td>
+          <td><audio controls preload="metadata" style="width:220px;">
+            <source src="/audio/${r.audioFile.split('/').pop()}" type="audio/wav">
+          </audio></td>
+        </tr>`).join("")}</tbody>
+      </table>`;
     }
 
     function updateMetricsDisplay(m) {
       document.getElementById("avg-poas").textContent =
-        m.avg_poas !== null && m.avg_poas !== undefined ? parseFloat(m.avg_poas).toFixed(4) : "—";
+        m.avg_poas != null ? parseFloat(m.avg_poas).toFixed(4) : "—";
       document.getElementById("cri-var").textContent =
-        m.cri_variance !== null && m.cri_variance !== undefined ? parseFloat(m.cri_variance).toFixed(5) : (m.run_count >= 1 ? "need ≥2 domains" : "—");
+        m.cri_variance != null ? parseFloat(m.cri_variance).toFixed(5) : (m.run_count >= 1 ? "need ≥2 domains" : "—");
       document.getElementById("run-count").textContent = m.run_count ?? 0;
     }
+
+    // ── Charts ────────────────────────────────────────────────────────────────
+    const DC = {
+      sfx:     { bg:"#FAEEDA", border:"#633806" },
+      music:   { bg:"#EEEDFE", border:"#3C3489" },
+      speech:  { bg:"#E1F5EE", border:"#085041" },
+      ambient: { bg:"#FAECE7", border:"#712B13" },
+    };
+    const DC_DEFAULT = { bg:"#e8e8e6", border:"#888" };
+    const dc = (d, p) => (DC[d] || DC_DEFAULT)[p];
+
+    let chartPoas = null, chartScatter = null, chartCounts = null;
+
+    async function refreshCharts() {
+      let data;
+      try { const r = await fetch(`${API_BASE}/csv-data`); data = await r.json(); }
+      catch(e) { return; }
+
+      const { results: rows, domain_transfer: dt } = data;
+
+      if (!rows || !rows.length) {
+        [chartPoas, chartScatter, chartCounts].forEach(c => c && c.destroy());
+        chartPoas = chartScatter = chartCounts = null;
+        renderCdts([]);
+        return;
+      }
+
+      // Chart 1 — mean POAS per domain
+      const domains = dt.map(r => r.domain);
+      const means   = dt.map(r => +parseFloat(r.mean_poas).toFixed(3));
+      const stds    = dt.map(r => +parseFloat(r.std_poas).toFixed(3));
+
+      const errPlugin = { id:"eb", afterDraw(c) {
+        const {ctx,scales:{x,y}} = c;
+        means.forEach((m,i) => {
+          const xc = x.getPixelForValue(i);
+          const yT = y.getPixelForValue(Math.min(1, m+stds[i]));
+          const yB = y.getPixelForValue(Math.max(0, m-stds[i]));
+          ctx.save(); ctx.strokeStyle = dc(domains[i],"border"); ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(xc,yT); ctx.lineTo(xc,yB); ctx.stroke();
+          [[xc,yT],[xc,yB]].forEach(([px,py])=>{ ctx.beginPath(); ctx.moveTo(px-5,py); ctx.lineTo(px+5,py); ctx.stroke(); });
+          ctx.restore();
+        });
+      }};
+
+      const d1 = { labels: domains, datasets: [{ label:"Mean POAS", data: means,
+        backgroundColor: domains.map(d=>dc(d,"bg")), borderColor: domains.map(d=>dc(d,"border")),
+        borderWidth:1.2, borderRadius:4, barPercentage:0.5 }] };
+      const o1 = { responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`Mean: ${ctx.parsed.y.toFixed(3)} ± ${stds[ctx.dataIndex].toFixed(3)}`}} },
+        scales:{ y:{min:0,max:1,ticks:{callback:v=>v.toFixed(1),font:{size:10}},grid:{color:"rgba(0,0,0,0.05)"}},
+                 x:{grid:{display:false},ticks:{font:{size:11}}} } };
+
+      if (chartPoas) { chartPoas.data = d1; chartPoas.options = o1; chartPoas.update(); }
+      else { chartPoas = new Chart(document.getElementById("chart-domain-poas"), { type:"bar", data:d1, options:o1, plugins:[errPlugin] }); }
+
+      // Chart 2 — CDTS diverging HTML bars
+      renderCdts(dt);
+
+      // Chart 3 — scatter per run
+      const domainSet = [...new Set(rows.map(r=>r.domain))];
+      const d3 = { datasets: domainSet.map(d => ({
+        label: d,
+        data: rows.filter(r=>r.domain===d).map(r=>({ x: rows.indexOf(r)+1, y: parseFloat(r.poas_score) })),
+        backgroundColor: dc(d,"border"), pointRadius:5, pointHoverRadius:7,
+      }))};
+      const o3 = { responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(3)}`}} },
+        scales:{ x:{title:{display:true,text:"Run #",font:{size:10}},ticks:{font:{size:10}},grid:{color:"rgba(0,0,0,0.05)"}},
+                 y:{min:0,max:1,ticks:{callback:v=>v.toFixed(1),font:{size:10}},grid:{color:"rgba(0,0,0,0.05)"}} } };
+
+      if (chartScatter) { chartScatter.data = d3; chartScatter.options = o3; chartScatter.update(); }
+      else { chartScatter = new Chart(document.getElementById("chart-scatter"), { type:"scatter", data:d3, options:o3 }); }
+
+      // Chart 4 — count per domain
+      const d4 = { labels: domains, datasets: [{ label:"Runs", data: dt.map(r=>r.samples),
+        backgroundColor: domains.map(d=>dc(d,"bg")), borderColor: domains.map(d=>dc(d,"border")),
+        borderWidth:1.2, borderRadius:4, barPercentage:0.5 }] };
+      const o4 = { responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ y:{beginAtZero:true,ticks:{stepSize:1,font:{size:10}},grid:{color:"rgba(0,0,0,0.05)"}},
+                 x:{grid:{display:false},ticks:{font:{size:11}}} } };
+
+      if (chartCounts) { chartCounts.data = d4; chartCounts.options = o4; chartCounts.update(); }
+      else { chartCounts = new Chart(document.getElementById("chart-counts"), { type:"bar", data:d4, options:o4 }); }
+    }
+
+    function renderCdts(dt) {
+      const wrap = document.getElementById("cdts-wrap");
+      if (!dt || !dt.length) { wrap.innerHTML = '<div class="chart-empty">No data yet</div>'; return; }
+      const maxAbs = Math.max(...dt.map(r=>Math.abs(r.cdts_local)), 0.01);
+      wrap.innerHTML = dt.map(r => {
+        const val = parseFloat(r.cdts_local);
+        const pct = Math.round(Math.abs(val) / maxAbs * 48);
+        const bar = val >= 0
+          ? `<div class="cdts-fill-pos" style="width:${pct}%"></div>`
+          : `<div class="cdts-fill-neg" style="width:${pct}%"></div>`;
+        return `<div class="cdts-row">
+          <span class="cdts-label"><span class="badge ${r.domain}" style="font-size:10px">${r.domain}</span></span>
+          <div class="cdts-track">${bar}</div>
+          <span class="cdts-val">${val>=0?"+":""}${val.toFixed(3)}</span>
+        </div>`;
+      }).join("");
+    }
+
+    // Load charts on page load — picks up CSVs from previous sessions
+    refreshCharts();
   </script>
 </body>
 </html>
